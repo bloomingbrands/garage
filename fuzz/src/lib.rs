@@ -25,6 +25,14 @@ where
 	};
 	assert_eq!(ab, ba, "merge is not commutative: {ab:#?} != {ba:#?}");
 
+	// LX's corrolary: merge(merge(a,b),b) = merge(a,b)
+	let ab_b = {
+		let mut t = ab.clone();
+		t.merge(&b);
+		t
+	};
+	assert_eq!(ab,ab_b);
+
 	// Associativity: merge(merge(a, b), c) == merge(a, merge(b, c))
 	let ab_c = {
 		let mut t = ab.clone();
