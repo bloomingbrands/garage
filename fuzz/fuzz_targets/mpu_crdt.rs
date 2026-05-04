@@ -1,7 +1,7 @@
 #![no_main]
 
+use garage_fuzz::check_crdt_laws;
 use garage_model::s3::mpu_table::{MpuPart, MpuPartKey, MultipartUpload};
-use garage_table::crdt::Crdt;
 use libfuzzer_sys::fuzz_target;
 
 /// Build a MultipartUpload from an arbitrary deleted flag and parts list, using a fixed
@@ -33,45 +33,5 @@ fuzz_target!(|inputs: (
 	(bool, Vec<(MpuPartKey, MpuPart)>)
 )| {
 	let ((d1, p1), (d2, p2), (d3, p3)) = inputs;
-	let a = make_mpu(d1, p1);
-	let b = make_mpu(d2, p2);
-	let c = make_mpu(d3, p3);
-
-	// Idempotency: merge(a, a) == a
-	{
-		let mut a2 = a.clone();
-		a2.merge(&a.clone());
-		assert_eq!(a2, a, "merge is not idempotent: {a2:#?} != {a:#?}");
-	}
-
-	// Commutativity: merge(a, b) == merge(b, a)
-	let ab = {
-		let mut t = a.clone();
-		t.merge(&b);
-		t
-	};
-	let ba = {
-		let mut t = b.clone();
-		t.merge(&a);
-		t
-	};
-	assert_eq!(ab, ba, "merge is not commutative: {ab:#?} != {ba:#?}");
-
-	// Associativity: merge(merge(a, b), c) == merge(a, merge(b, c))
-	let ab_c = {
-		let mut t = ab.clone();
-		t.merge(&c);
-		t
-	};
-	let bc = {
-		let mut t = b.clone();
-		t.merge(&c);
-		t
-	};
-	let a_bc = {
-		let mut t = a.clone();
-		t.merge(&bc);
-		t
-	};
-	assert_eq!(ab_c, a_bc, "merge is not associative: {ab_c:#?} != {a_bc:#?}");
+	check_crdt_laws(make_mpu(d1, p1), make_mpu(d2, p2), make_mpu(d3, p3));
 });
