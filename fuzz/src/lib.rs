@@ -8,7 +8,7 @@ where
 	// Idempotency: merge(a, a) == a
 	{
 		let mut a2 = a.clone();
-		a2.merge(&a.clone());
+		a2.merge(&a);
 		assert_eq!(a2, a, "merge is not idempotent: {a2:#?} != {a:#?}");
 	}
 
@@ -35,17 +35,17 @@ where
 
 	// Associativity: merge(merge(a, b), c) == merge(a, merge(b, c))
 	let ab_c = {
-		let mut t = ab.clone();
+		let mut t = ab;
 		t.merge(&c);
 		t
 	};
 	let bc = {
-		let mut t = b.clone();
+		let mut t = b;
 		t.merge(&c);
 		t
 	};
 	let a_bc = {
-		let mut t = a.clone();
+		let mut t = a;
 		t.merge(&bc);
 		t
 	};
