@@ -31,7 +31,7 @@ where
 		t.merge(&b);
 		t
 	};
-	assert_eq!(ab,ab_b);
+	assert_eq!(ab, ab_b);
 
 	// Associativity: merge(merge(a, b), c) == merge(a, merge(b, c))
 	let ab_c = {
@@ -49,5 +49,8 @@ where
 		t.merge(&bc);
 		t
 	};
-	assert_eq!(ab_c, a_bc, "merge is not associative: {ab_c:#?} != {a_bc:#?}");
+	assert_eq!(
+		ab_c, a_bc,
+		"merge is not associative: {ab_c:#?} != {a_bc:#?}"
+	);
 }

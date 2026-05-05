@@ -34,5 +34,9 @@ fuzz_target!(|inputs: (
 	(bool, Vec<(VersionBlockKey, VersionBlock)>)
 )| {
 	let ((d1, b1), (d2, b2), (d3, b3)) = inputs;
-	check_crdt_laws(make_version(d1, b1), make_version(d2, b2), make_version(d3, b3));
+	check_crdt_laws(
+		make_version(d1, b1),
+		make_version(d2, b2),
+		make_version(d3, b3),
+	);
 });
