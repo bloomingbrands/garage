@@ -4,6 +4,7 @@ use crate::crdt::crdt::*;
 
 /// Deletable object (once deleted, cannot go back)
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Deletable<T> {
 	Present(T),
 	Deleted,

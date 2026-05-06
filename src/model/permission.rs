@@ -6,6 +6,7 @@ use garage_util::crdt::*;
 
 /// Permission given to a key in a bucket
 #[derive(PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct BucketKeyPerm {
 	/// Timestamp at which the permission was given
 	pub timestamp: u64,

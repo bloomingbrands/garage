@@ -63,6 +63,7 @@ mod v08 {
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct CorsRule {
 		pub id: Option<String>,
 		pub max_age_seconds: Option<u64>,
@@ -74,6 +75,7 @@ mod v08 {
 
 	/// Lifecycle configuration rule
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct LifecycleRule {
 		/// The ID of the rule
 		pub id: Option<String>,
@@ -91,6 +93,7 @@ mod v08 {
 	/// For each condition, if it is None, it is not verified (always true),
 	/// and if it is Some(x), then it is verified for value x
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize, Default)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct LifecycleFilter {
 		/// If Some(x), object key has to start with prefix x
 		pub prefix: Option<String>,
@@ -101,6 +104,7 @@ mod v08 {
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub enum LifecycleExpiration {
 		/// Objects expire x days after they were created
 		AfterDays(usize),
@@ -109,6 +113,7 @@ mod v08 {
 	}
 
 	#[derive(Default, PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct BucketQuotas {
 		/// Maximum size in bytes (bucket size = sum of sizes of objects in the bucket)
 		pub max_size: Option<u64>,
@@ -139,6 +144,7 @@ mod v2 {
 
 	/// Configuration for a bucket
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct BucketParams {
 		/// Bucket's creation date
 		pub creation_date: u64,
@@ -168,6 +174,7 @@ mod v2 {
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct WebsiteConfig {
 		pub index_document: String,
 		pub error_document: Option<String>,
@@ -178,24 +185,28 @@ mod v2 {
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct RedirectAll {
 		pub hostname: String,
 		pub protocol: String,
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct RoutingRule {
 		pub condition: Option<RedirectCondition>,
 		pub redirect: Redirect,
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct RedirectCondition {
 		pub http_error_code: Option<u16>,
 		pub prefix: Option<String>,
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub struct Redirect {
 		pub hostname: Option<String>,
 		pub http_redirect_code: u16,

@@ -13,6 +13,7 @@ libfuzzer-sys = { workspace = true }
 
 garage_db.workspace = true
 garage_table.workspace = true
+garage_util.workspace = true
 garage_model = { workspace = true, default-features = false, features = ["arbitrary"] }
 
 [[bin]]
@@ -25,6 +26,13 @@ bench = false
 [[bin]]
 name = "mpu_crdt"
 path = "fuzz_targets/mpu_crdt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bucket_crdt"
+path = "fuzz_targets/bucket_crdt.rs"
 test = false
 doc = false
 bench = false

@@ -200,3 +200,19 @@ where
 		Self::new()
 	}
 }
+
+#[cfg(feature = "arbitrary")]
+impl<'a, K, V> arbitrary::Arbitrary<'a> for LwwMap<K, V>
+where
+	K: arbitrary::Arbitrary<'a> + Clone + Ord,
+	V: arbitrary::Arbitrary<'a> + Clone + Crdt,
+{
+	fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Self> {
+		let map: std::collections::BTreeMap<K, (u64, V)> = arbitrary::Arbitrary::arbitrary(u)?;
+		let mut result = LwwMap::new();
+		for (k, (ts, v)) in map {
+			result.merge_raw(&k, ts, &v);
+		}
+		Ok(result)
+	}
+}
