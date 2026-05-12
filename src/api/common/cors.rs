@@ -123,6 +123,7 @@ pub fn handle_options_api(
 			Ok(Response::builder()
 				.header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
 				.header(ACCESS_CONTROL_ALLOW_METHODS, "*")
+				.header(ACCESS_CONTROL_ALLOW_HEADERS, "*")
 				.status(StatusCode::OK)
 				.body(EmptyBody::new())?)
 		}
