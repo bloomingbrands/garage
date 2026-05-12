@@ -14,7 +14,7 @@ libfuzzer-sys = { workspace = true }
 garage_db.workspace = true
 garage_table.workspace = true
 garage_util.workspace = true
-garage_model = { workspace = true, default-features = false, features = ["arbitrary"] }
+garage_model = { workspace = true, default-features = false, features = ["arbitrary", "k2v"] }
 
 [[bin]]
 name = "version_crdt"
@@ -61,6 +61,13 @@ bench = false
 [[bin]]
 name = "bucket_alias_crdt"
 path = "fuzz_targets/bucket_alias_crdt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "k2v_item_crdt"
+path = "fuzz_targets/k2v_item_crdt.rs"
 test = false
 doc = false
 bench = false

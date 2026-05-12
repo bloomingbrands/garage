@@ -45,6 +45,7 @@ mod v08 {
 	}
 
 	#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+	#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 	pub enum DvvsValue {
 		Value(#[serde(with = "serde_bytes")] Vec<u8>),
 		Deleted,
@@ -131,9 +132,26 @@ impl K2VItem {
 			ent.discard();
 		}
 	}
+
+	pub fn with_raw_items(items: BTreeMap<K2VNodeId, DvvsEntry>) -> Self {
+		let mut item = K2VItem {
+			partition: K2VItemPartition {
+				bucket_id: [0u8; 32].into(),
+				partition_key: String::new(),
+			},
+			sort_key: String::new(),
+			items,
+		};
+		item.discard();
+		item
+	}
 }
 
 impl DvvsEntry {
+	pub fn from_raw(t_discard: u64, values: Vec<(u64, DvvsValue)>) -> Self {
+		DvvsEntry { t_discard, values }
+	}
+
 	fn max_time(&self) -> u64 {
 		self.values
 			.iter()
@@ -162,15 +180,26 @@ impl Crdt for K2VItem {
 
 impl Crdt for DvvsEntry {
 	fn merge(&mut self, other: &Self) {
-		self.t_discard = std::cmp::max(self.t_discard, other.t_discard);
-		self.discard();
-
-		let t_max = self.max_time();
-		for (vt, vv) in other.values.iter() {
-			if *vt > t_max {
-				self.values.push((*vt, vv.clone()));
+		let mut slf = std::mem::take(&mut self.values).into_iter().peekable();
+		let mut otr = other.values.iter().peekable();
+		while let (Some((slf_t, _)), Some((otr_t, _))) = (slf.peek(), otr.peek()) {
+			match slf_t.cmp(otr_t) {
+				std::cmp::Ordering::Less => {
+					self.values.push(slf.next().unwrap());
+				}
+				std::cmp::Ordering::Equal => {
+					self.values.push(slf.next().unwrap());
+					otr.next();
+				}
+				std::cmp::Ordering::Greater => {
+					self.values.push(otr.next().unwrap().clone());
+				}
 			}
 		}
+		self.values.extend(slf);
+		self.values.extend(otr.cloned());
+		self.t_discard = std::cmp::max(self.t_discard, other.t_discard);
+		self.discard();
 	}
 }
 
