@@ -51,6 +51,7 @@ mod v08 {
 
 mod v2 {
 	use crate::permission::BucketKeyPerm;
+	use crate::permission::ExpirationTime;
 	use garage_util::crdt;
 	use garage_util::data::Uuid;
 	use serde::{Deserialize, Serialize};
@@ -79,7 +80,7 @@ mod v2 {
 		/// Name for the key
 		pub name: crdt::Lww<String>,
 		/// The optional time of expiration of the key
-		pub expiration: crdt::Lww<crdt::CancelingOption<u64>>,
+		pub expiration: crdt::Lww<crdt::MergingOption<ExpirationTime>>,
 
 		/// Flag to allow users having this key to create buckets
 		pub allow_create_bucket: crdt::Lww<bool>,
@@ -231,7 +232,7 @@ impl KeyParams {
 	pub fn is_expired(&self, ts_now: u64) -> bool {
 		match self.expiration.get().inner() {
 			None => false,
-			Some(exp) => ts_now >= *exp,
+			Some(exp) => ts_now >= exp.0,
 		}
 	}
 }

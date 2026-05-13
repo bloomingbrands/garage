@@ -8,6 +8,7 @@ use garage_table::{EmptyKey, Entry, TableSchema};
 pub use crate::key_table::KeyFilter;
 
 mod v2 {
+	use crate::permission::ExpirationTime;
 	use garage_util::crdt;
 	use serde::{Deserialize, Serialize};
 
@@ -35,7 +36,7 @@ mod v2 {
 		pub name: crdt::Lww<String>,
 
 		/// The optional time of expiration of the token
-		pub expiration: crdt::Lww<crdt::CancelingOption<u64>>,
+		pub expiration: crdt::Lww<crdt::MergingOption<ExpirationTime>>,
 
 		/// The scope of the token, i.e. list of authorized admin API calls
 		pub scope: crdt::Lww<AdminApiTokenScope>,
@@ -149,7 +150,7 @@ impl AdminApiTokenParams {
 	pub fn is_expired(&self, ts_now: u64) -> bool {
 		match self.expiration.get().inner() {
 			None => false,
-			Some(exp) => ts_now >= *exp,
+			Some(exp) => ts_now >= exp.0,
 		}
 	}
 

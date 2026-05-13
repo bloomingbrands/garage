@@ -8,6 +8,7 @@ use garage_util::time::now_msec;
 
 use garage_model::garage::Garage;
 use garage_model::key_table::*;
+use garage_model::permission::ExpirationTime;
 
 use crate::api::*;
 use crate::error::*;
@@ -41,7 +42,7 @@ impl RequestHandler for ListKeysRequest {
 							.expect("invalid timestamp stored in db")
 					}),
 					expiration: p.expiration.get().inner().map(|x| {
-						DateTime::from_timestamp_millis(*x as i64)
+						DateTime::from_timestamp_millis(x.0 as i64)
 							.expect("invalid timestamp stored in db")
 					}),
 					expired: p.is_expired(now),
@@ -218,7 +219,7 @@ async fn key_info_results(
 			DateTime::from_timestamp_millis(x as i64).expect("invalid timestamp stored in db")
 		}),
 		expiration: key_state.expiration.get().inner().map(|x| {
-			DateTime::from_timestamp_millis(*x as i64).expect("invalid timestamp stored in db")
+			DateTime::from_timestamp_millis(x.0 as i64).expect("invalid timestamp stored in db")
 		}),
 		expired: key_state.is_expired(now_msec()),
 		access_key_id: key.key_id.clone(),
@@ -283,7 +284,7 @@ fn apply_key_updates(key: &mut Key, updates: UpdateKeyRequestBody) -> Result<(),
 	if let Some(expiration) = updates.expiration {
 		key_state
 			.expiration
-			.update(Some(expiration.timestamp_millis() as u64).into());
+			.update(Some(ExpirationTime(expiration.timestamp_millis() as u64)).into());
 	}
 	if updates.never_expires {
 		key_state.expiration.update(None.into());

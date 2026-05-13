@@ -7,6 +7,7 @@ use garage_util::time::now_msec;
 
 use garage_model::admin_token_table::*;
 use garage_model::garage::Garage;
+use garage_model::permission::ExpirationTime;
 
 use crate::api::*;
 use crate::error::*;
@@ -245,7 +246,7 @@ fn admin_token_info_results(token: &AdminApiToken, now: u64) -> GetAdminTokenInf
 		),
 		name: params.name.get().to_string(),
 		expiration: params.expiration.get().inner().map(|x| {
-			DateTime::from_timestamp_millis(*x as i64).expect("invalid timestamp stored in db")
+			DateTime::from_timestamp_millis(x.0 as i64).expect("invalid timestamp stored in db")
 		}),
 		expired: params.is_expired(now),
 		scope: params.scope.get().0.clone(),
@@ -279,7 +280,7 @@ fn apply_token_updates(
 	if let Some(expiration) = updates.expiration {
 		params
 			.expiration
-			.update(Some(expiration.timestamp_millis() as u64).into());
+			.update(Some(ExpirationTime(expiration.timestamp_millis() as u64)).into());
 	}
 	if updates.never_expires {
 		params.expiration.update(None.into());
