@@ -2,13 +2,14 @@
 
 use garage_fuzz::check_crdt_laws;
 use garage_model::admin_token_table::{AdminApiToken, AdminApiTokenParams, AdminApiTokenScope};
+use garage_model::permission::ExpirationTime;
 use garage_util::crdt;
 use libfuzzer_sys::fuzz_target;
 
 type Input = (
 	bool,
 	crdt::Lww<String>,
-	crdt::Lww<Option<u64>>,
+	crdt::Lww<crdt::MergingOption<ExpirationTime>>,
 	crdt::Lww<AdminApiTokenScope>,
 );
 

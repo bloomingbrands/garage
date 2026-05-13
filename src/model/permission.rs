@@ -63,3 +63,15 @@ impl Crdt for BucketKeyPerm {
 		}
 	}
 }
+
+/// Expiration date for a key or token
+#[derive(PartialOrd, Ord, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[serde(transparent)]
+pub struct ExpirationTime(pub u64);
+
+impl Crdt for ExpirationTime {
+	fn merge(&mut self, other: &Self) {
+		self.0 = std::cmp::min(self.0, other.0);
+	}
+}
