@@ -2,7 +2,7 @@
 
 use garage_fuzz::check_crdt_laws;
 use garage_model::key_table::{Key, KeyParams};
-use garage_model::permission::BucketKeyPerm;
+use garage_model::permission::{BucketKeyPerm, ExpirationTime};
 use garage_util::crdt;
 use garage_util::data::Uuid;
 use libfuzzer_sys::fuzz_target;
@@ -10,10 +10,10 @@ use libfuzzer_sys::fuzz_target;
 type Input = (
 	bool,
 	crdt::Lww<String>,
-	crdt::Lww<Option<u64>>,
+	crdt::Lww<crdt::MergingOption<ExpirationTime>>,
 	crdt::Lww<bool>,
 	crdt::Map<Uuid, BucketKeyPerm>,
-	crdt::LwwMap<String, Option<Uuid>>,
+	crdt::LwwMap<String, crdt::CancelingOption<Uuid>>,
 );
 
 fn make(input: Input) -> Key {
