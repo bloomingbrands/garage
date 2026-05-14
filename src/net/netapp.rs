@@ -43,6 +43,7 @@ pub(crate) const NETAPP_VERSION_TAG: u64 = 0x6772676e65740010; // grgnet 0x0010 
 /// Time a connection must be idle before the first keepalive probe is sent.
 const TCP_KEEPALIVE_TIME: Duration = Duration::from_secs(30);
 /// Interval between keepalive probes after the first.
+#[cfg(not(target_os = "openbsd"))]
 const TCP_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Timeout for outgoing TCP connection attempts.
@@ -52,9 +53,15 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 
 fn set_keepalive(stream: &TcpStream) -> Result<(), std::io::Error> {
 	let sock_ref = socket2::SockRef::from(stream);
+	// OpenBSD does not support with_interval method
+	#[cfg(not(target_os = "openbsd"))]
 	let keepalive = socket2::TcpKeepalive::new()
 		.with_time(TCP_KEEPALIVE_TIME)
 		.with_interval(TCP_KEEPALIVE_INTERVAL);
+
+	#[cfg(target_os = "openbsd")]
+	let keepalive = socket2::TcpKeepalive::new().with_time(TCP_KEEPALIVE_TIME);
+
 	sock_ref.set_tcp_keepalive(&keepalive)
 }
 
