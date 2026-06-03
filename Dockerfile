@@ -38,5 +38,6 @@ ENV RUST_BACKTRACE=1
 ENV RUST_LOG=garage=info
 
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/garage /garage
+COPY garage.toml /etc/garage.toml
 
 CMD ["/garage", "server"]
