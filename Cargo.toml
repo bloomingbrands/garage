@@ -16,7 +16,6 @@ members = [
 	"src/garage",
 	"src/k2v-client",
 	"src/format-table",
-    "fuzz",
 ]
 
 default-members = ["src/garage"]
@@ -61,7 +60,6 @@ hmac = "0.12"
 itertools = "0.14"
 ipnet = "2.11"
 lazy_static = "1.5"
-libfuzzer-sys = "0.4"
 md-5 = "0.10"
 mktemp = "0.5"
 nix = { version = "0.31", default-features = false, features = ["fs"] }
