@@ -1,0 +1,40 @@
+services:
+  garage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3900:3900"
+      - "3901:3901"
+      - "3902:3902"
+      - "3903:3903"
+    volumes:
+      - garage-data:/var/lib/garage
+      - ./garage.toml:/etc/garage.toml:ro
+    environment:
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+      - GARAGE_METRICS_TOKEN=${GARAGE_METRICS_TOKEN}
+      - RUST_LOG=garage=info
+    restart: unless-stopped
+
+  webui:
+    image: khairul169/garage-webui:latest
+    ports:
+      - "3909:3909"
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+    environment:
+      - CONFIG_PATH=/etc/garage.toml
+      - API_BASE_URL=http://garage:3903
+      - S3_ENDPOINT_URL=http://garage:3900
+      - API_ADMIN_KEY=${GARAGE_ADMIN_TOKEN}
+      - S3_REGION=us-east-1
+      # Optional basic auth (bcrypt hash). Example:
+      # - AUTH_USER_PASS=admin:$2y$10$...
+    depends_on:
+      - garage
+    restart: unless-stopped
+
+volumes:
+  garage-data:

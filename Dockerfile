@@ -31,13 +31,17 @@ RUN cargo build --release --bin garage \
       --features bundled-libs,lmdb,sqlite,fjall,k2v,consul-discovery,kubernetes-discovery,metrics,telemetry-otlp,syslog,journald \
       2>&1
 
-# ---- Final stage (scratch — minimal image) ----
-FROM scratch
+# ---- Final stage (Alpine — debuggable + CA certs + volumes work properly) ----
+FROM alpine:latest
+RUN apk add --no-cache ca-certificates \
+    && mkdir -p /var/lib/garage/meta /var/lib/garage/data
 
 ENV RUST_BACKTRACE=1
 ENV RUST_LOG=garage=info
 
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/garage /garage
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/garage /usr/local/bin/garage
 COPY garage.toml /etc/garage.toml
 
-CMD ["/garage", "server"]
+EXPOSE 3900 3901 3902 3903
+
+CMD ["garage", "server"]
