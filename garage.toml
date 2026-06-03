@@ -7,8 +7,7 @@ data_dir = "/var/lib/garage/data"
 replication_factor = 1
 
 rpc_bind_addr = "[::]:3901"
-# Set rpc_public_addr to your server's public address so other nodes can reach it
-# rpc_public_addr = "garage-os.blooming-brands.com:3901"
+rpc_public_addr = "garage-os.blooming-brands.com:3901"
 
 [s3_api]
 s3_region = "us-east-1"
