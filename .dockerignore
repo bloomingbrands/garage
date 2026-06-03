@@ -16,6 +16,9 @@ script/
 CONTRIBUTING.md
 SECURITY.md
 
+# Git history (not needed in build context)
+.git/
+
 # Non-source noise
 .vscode/
 .idea/

@@ -24,9 +24,12 @@ COPY src/format-table/Cargo.toml src/format-table/
 # Copy all source
 COPY . .
 
-# Build in release mode (static musl binary)
-ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=muslgcc
-RUN cargo build --release --bin garage 2>&1
+# Build in release mode with all production features (static musl binary)
+# Features match the Nix release build in nix/compile.nix
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc
+RUN cargo build --release --bin garage \
+      --features bundled-libs,lmdb,sqlite,fjall,k2v,consul-discovery,kubernetes-discovery,metrics,telemetry-otlp,syslog,journald \
+      2>&1
 
 # ---- Final stage (scratch — minimal image) ----
 FROM scratch
@@ -34,6 +37,6 @@ FROM scratch
 ENV RUST_BACKTRACE=1
 ENV RUST_LOG=garage=info
 
-COPY --from=builder /app/target/release/garage /garage
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/garage /garage
 
 CMD ["/garage", "server"]
