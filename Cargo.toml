@@ -65,7 +65,7 @@ mktemp = "0.5"
 nix = { version = "0.31", default-features = false, features = ["fs"] }
 nom = "8.0"
 parking_lot = "0.12"
-parse_duration = "2.1"
+humantime = "2.3"
 paste = "1.0"
 pin-project = "1.1"
 pnet_datalink = "0.35"
@@ -168,11 +168,11 @@ thiserror = "2.0"
 assert-json-diff = "2.0"
 rustc_version = "0.4"
 static_init = "1.0"
-aws-smithy-runtime = { version = "1.9", default-features = false, features = [
+aws-smithy-runtime = { version = "1.11", default-features = false, features = [
     "tls-rustls",
 ] }
-aws-sdk-config = { version = "1.99", default-features = false }
-aws-sdk-s3 = { version = "1.121", default-features = false, features = [
+aws-sdk-config = { version = "1.106", default-features = false }
+aws-sdk-s3 = { version = "1.131", default-features = false, features = [
     "rt-tokio",
 ] }
 
