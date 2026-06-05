@@ -18,7 +18,7 @@ FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
 
 # Force Docker to rebuild layers after this point (change string to bust cache)
-RUN echo "entrypoint-v4" > /dev/null
+RUN echo "entrypoint-v5-capacity-1G" > /dev/null
 
 # Copy the official statically-linked binary
 COPY --from=garage-binary /garage /usr/local/bin/garage

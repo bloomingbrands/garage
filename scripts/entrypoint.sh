@@ -81,8 +81,8 @@ init_cluster() {
     NODE_ID=$(/usr/local/bin/garage -c "${CONFIG}" node id)
     echo "   Node ID: ${NODE_ID}"
 
-    echo "→ Assigning layout (zone=dc1, capacity=100)..."
-    /usr/local/bin/garage -c "${CONFIG}" layout assign "${NODE_ID}" --zone dc1 --capacity 100
+    echo "→ Assigning layout (zone=dc1, capacity=1G)..."
+    /usr/local/bin/garage -c "${CONFIG}" layout assign "${NODE_ID}" --zone dc1 --capacity 1G
 
     echo "→ Applying layout..."
     /usr/local/bin/garage -c "${CONFIG}" layout apply --version 1
