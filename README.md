@@ -1,72 +1,133 @@
-# Garage S3-Compatible Storage — Coolify Deployment
+# Garage S3-Compatible Storage — Coolify Dockerfile
 
-> One-click-ready Docker Compose deployment of [Garage](https://garagehq.deuxfleurs.fr/) (lightweight, distributed S3-compatible object storage) for [Coolify](https://coolify.io/).
+> Single-container Dockerfile deployment of [Garage](https://garagehq.deuxfleurs.fr/) for [Coolify](https://coolify.io/).
+> The container **self-bootstraps** on first run: it initializes the cluster layout,
+> creates your bucket, and generates access keys automatically.
 >
-> Based on the guide: [How to Set Up Garage S3-Compatible Storage on Ubuntu](https://oneuptime.com/blog/post/2026-03-02-how-to-set-up-garage-s3-compatible-storage-on-ubuntu/view)
+> Based on: [How to Set Up Garage S3-Compatible Storage on Ubuntu](https://oneuptime.com/blog/post/2026-03-02-how-to-set-up-garage-s3-compatible-storage-on-ubuntu/view)
 
 ---
 
-## What's inside
+## The Problem with Coolify's 1-Click Garage
+
+Coolify's app-store template pulls `dxflrs/garage`, exposes ports, and mounts a volume.
+**But it does NOT run the required post-start initialization:**
+
+- `garage node id` → get node ID
+- `garage layout assign` → assign zone + capacity
+- `garage layout apply` → commit the layout
+- `garage bucket create` → create a bucket
+- `garage key create` → create access credentials
+
+Without these steps, the cluster has **zero capacity** and the S3 API rejects requests. That's "half-provisioned."
+
+**Why this happens:** The official Garage image is built `FROM scratch` (no shell). So Coolify's template can't run any init script inside the container.
+
+**Our fix:** This repo builds a custom image based on Alpine that contains the official static binary PLUS an entrypoint script that handles all initialization automatically.
+
+---
+
+## Files
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` | Main Coolify service definition (official `dxflrs/garage:v1.0.1` image) |
-| `garage.toml` | Garage server configuration (edit `rpc_secret` before first deploy) |
-| `.env.example` | Environment variable template for port mapping and timezone |
-| `scripts/setup.sh` | Post-deploy helper that runs the 6 init steps from the article |
+| `Dockerfile` | Multi-stage build: copies official binary into Alpine + entrypoint |
+| `scripts/entrypoint.sh` | Generates config, bootstraps cluster on first boot, starts server |
+| `.env.example` | All environment variables (copy into Coolify UI) |
+| `garage.toml` | Reference template showing what the entrypoint generates |
 
 ---
 
-## Prerequisites
+## Quick Deploy on Coolify
 
-- Ubuntu 22.04/24.04 server (or any Linux host with Docker)
-- At least **1 GB RAM** (2 GB+ recommended)
-- Ports **3900–3903** free on the host (or edit `.env`)
-- A block/volume mounted for persistent data (Coolify handles this via named volumes)
+### 1. Fork / clone this repo
 
----
+Push to your own GitHub account.
 
-## 1. First deploy on Coolify
-
-1. **Push this repo to GitHub** and create a new project in Coolify.
-2. In Coolify UI → **Environment Variables**, paste the contents of `.env.example` and adjust ports if needed.
-3. **Before first deploy**, edit `garage.toml` and replace:
-   ```toml
-   rpc_secret = "REPLACE_WITH_OPENSSL_RAND_HEX_32"
-   ```
-   with a real secret:
-   ```bash
-   openssl rand -hex 32
-   ```
-4. Click **Deploy**. Coolify will run `docker compose up -d`.
-
----
-
-## 2. Initialize the cluster (single-node)
-
-After the container is healthy, SSH into the Coolify server (or use Coolify's built-in terminal) and run:
+### 2. Generate the RPC secret
 
 ```bash
-cd /data/coolify/services/<your-garage-uuid>
-chmod +x scripts/setup.sh
-./scripts/setup.sh
+openssl rand -hex 32
 ```
 
-The script automates the article's **Steps 5 & 6**:
-1. Retrieves the node ID
-2. Assigns layout (`zone=dc1`, `capacity=100`)
-3. Applies layout version 1
-4. Checks cluster status
-5. Creates a bucket
-6. Creates an access key and grants read+write permissions
+Copy the output. You'll paste it into Coolify in the next step.
 
-> **Important:** Save the **Access Key ID** and **Secret Access Key** printed during key creation — they are shown only once.
+### 3. Create Coolify Resource
+
+1. In Coolify dashboard → **Projects** → **Add New**
+2. Choose **Application** (not "Service" or "Docker Compose")
+3. Source: your GitHub repo
+4. Build type: **Dockerfile** (Coolify auto-detects `Dockerfile` in root)
+5. Click **Deploy**
+
+### 4. Set Environment Variables
+
+In the Coolify UI for this resource, go to **Environment Variables** and paste the contents of `.env.example`. Then fill in the required values:
+
+| Variable | Value | Required? |
+|----------|-------|-----------|
+| `GARAGE_RPC_SECRET` | `openssl rand -hex 32` | **YES** |
+| `GARAGE_INIT_BUCKET` | `prod-bucket` | Optional |
+| `GARAGE_INIT_KEY` | `prod-key` | Optional |
+| `GARAGE_WEB_ROOT_DOMAIN` | `.web.yourdomain.com` | Optional |
+| `TZ` | `UTC` | Recommended |
+
+Leave `SERVICE_FQDN_*` empty — Coolify auto-populates them if you assign domains.
+
+### 5. Re-deploy
+
+Coolify rebuilds the image with your env vars baked into the startup. On first boot you will see initialization logs in Coolify's container logs. After that, the container restarts cleanly into the foreground server.
 
 ---
 
-## 3. Connect with AWS CLI
+## First-Boot Logs (what you should see)
 
-Install `awscli` locally or on the server:
+```
+First boot detected. Starting server for initialization...
+Waiting for Garage to be ready...
+Garage is ready.
+
+==========================================
+  Initializing Garage Single-Node Cluster
+==========================================
+
+→ Retrieving node ID...
+   Node ID: <hex-id>
+→ Assigning layout (zone=dc1, capacity=100)...
+→ Applying layout...
+→ Cluster status:
+→ Creating bucket 'prod-bucket'...
+→ Creating access key 'prod-key'...
+→ Granting read+write on 'prod-bucket' to key 'prod-key'...
+
+✅ Initialization complete.
+
+Restarting Garage in foreground...
+```
+
+**Important:** The access key ID and secret key are printed **only once** during the `key create` step. Save them from the Coolify logs — you will need them to connect S3 clients.
+
+If you miss them, you can create a new key later:
+```bash
+docker exec <garage-container> /usr/local/bin/garage -c /etc/garage.toml key create another-key
+```
+
+---
+
+## Ports
+
+| Port | Service | Typical Exposure |
+|------|---------|------------------|
+| 3900 | RPC (node-to-node) | Internal only |
+| 3901 | S3 API | Internal / VPN / Reverse-proxy |
+| 3902 | S3 Web (static sites) | Public (if hosting websites) |
+| 3903 | Admin API + Prometheus `/metrics` | Internal / VPN / Reverse-proxy |
+
+In Coolify you can assign domains to ports 3901/3902/3903 via the **Domains** tab and Traefik will proxy them with HTTPS.
+
+---
+
+## Connect with AWS CLI
 
 ```bash
 aws configure set aws_access_key_id     <YOUR_KEY_ID>
@@ -75,68 +136,57 @@ aws configure set default.region        us-east-1
 ```
 
 List buckets:
-
 ```bash
-aws s3 ls --endpoint-url http://<your-server-ip>:3901
+aws s3 ls --endpoint-url https://s3.yourdomain.com
 ```
 
-Upload a test file:
-
+Upload:
 ```bash
-aws s3 cp /etc/hostname s3://my-bucket/hostname.txt --endpoint-url http://<your-server-ip>:3901
+aws s3 cp ./file.txt s3://prod-bucket/file.txt --endpoint-url https://s3.yourdomain.com
 ```
 
 ---
 
-## 4. Connect with rclone
+## Connect with rclone
 
 ```bash
 rclone config create garage s3 \
   provider Other \
   access_key_id <YOUR_KEY_ID> \
   secret_access_key <YOUR_SECRET_KEY> \
-  endpoint http://<your-server-ip>:3901 \
+  endpoint https://s3.yourdomain.com \
   acl private
 ```
 
-Sync a local directory:
-
+Sync:
 ```bash
-rclone sync /var/backups garage:my-bucket/backups/
+rclone sync /local/backups garage:prod-bucket/backups/
 ```
 
 ---
 
-## 5. Ports reference
+## Monitoring
 
-| Port | Service | Typical exposure |
-|------|---------|----------------|
-| 3900 | RPC (node-to-node) | Internal / VPN only |
-| 3901 | S3 API | Internal / VPN only (or reverse-proxy for HTTPS) |
-| 3902 | S3 Web (static sites) | Public if hosting websites |
-| 3903 | Admin API | Internal / VPN only |
+Garage exposes Prometheus metrics at:
+```
+https://admin.yourdomain.com/metrics
+```
 
-For public S3 access, put a reverse proxy (Nginx / Traefik) in front of **3901** and terminate TLS there. If you use Coolify's built-in Traefik, uncomment the labels in `docker-compose.yml`.
+If you need basic-auth in front of it, add an Nginx sidecar or use Coolify's Traefik middleware. The env vars `GARAGE_ADMIN_TOKEN` and `GARAGE_METRICS_TOKEN` are documented placeholders for your reverse-proxy config.
 
 ---
 
-## 6. Monitoring
+## Upgrading Garage
 
-Garage exposes Prometheus metrics at `http://<host>:3903/metrics`. Point your monitoring stack (Grafana, OneUptime, Uptime-Kuma, etc.) to that endpoint.
-
----
-
-## 7. Upgrading Garage
-
-1. Check the [release page](https://garagehq.deuxfleurs.fr) for the latest version.
-2. Update the image tag in `docker-compose.yml`:
-   ```yaml
-   image: dxflrs/garage:vX.Y.Z
+1. Check [releases](https://garagehq.deuxfleurs.fr) for latest version.
+2. Edit `Dockerfile`:
+   ```dockerfile
+   FROM dxflrs/garage:vX.Y.Z AS garage-binary
    ```
-3. Redeploy via Coolify.
+3. Push to GitHub. Coolify auto-redeploys.
 
 ---
 
 ## License
 
-Garage is released under the AGPL-3.0 license. This deployment wrapper is provided as-is for self-hosting convenience.
+Garage is AGPL-3.0. This deployment wrapper is provided as-is.

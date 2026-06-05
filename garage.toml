@@ -1,14 +1,14 @@
-# Garage S3-Compatible Storage Configuration
-# Based on: https://oneuptime.com/blog/post/2026-03-02-how-to-set-up-garage-s3-compatible-storage-on-ubuntu/view
+# =============================================================================
+# Reference garage.toml (what the container generates internally)
+# =============================================================================
+# DO NOT commit real secrets to this file.
+# The entrypoint script writes /etc/garage.toml automatically from env vars.
+# This file is kept in the repo only as documentation.
+# =============================================================================
 
-# RPC bind address (internal node communication)
 rpc_bind_addr = "0.0.0.0:3900"
+rpc_secret    = "SET_VIA_GARAGE_RPC_SECRET_ENV_VAR"
 
-# Generate a strong secret with: openssl rand -hex 32
-# This must be set before first deployment.
-rpc_secret = "0da8101fd410d5704760d012e98514da3469f6e9e8ede8a6a1b8c70a0fe1982e"
-
-# Metadata and data directories inside the container
 metadata_dir = "/var/lib/garage/meta"
 data_dir     = "/var/lib/garage/data"
 
