@@ -1,11 +1,39 @@
 #!/bin/sh
 # Starts the Garage server, then idempotently bootstraps the single-node cluster
-# (layout, bucket, S3 key) using the LOCAL CLI — which connects to this node
-# automatically, no node-id or RPC host needed. Safe to run on every deploy.
+# (layout, bucket, S3 key) using the LOCAL CLI. Safe to run on every deploy.
+#
+# Coolify injects secrets as env vars (SERVICE_PASSWORD_*). We write them
+# into the config file at startup because Garage reads the TOML directly.
 set -u
 
 BUCKET="${BUCKET_NAME:-customer-data}"
 CAPACITY="${CAPACITY:-50G}"
+
+# --- Inject secrets from env vars into garage.toml -------------------------
+# Garage reads these from the config file, not env vars named GARAGE_*.
+# Coolify provides them as SERVICE_PASSWORD_* in the .env file.
+CFG="/etc/garage.toml"
+
+# rpc_secret — must be 32 bytes hex
+if [ -n "${GARAGE_RPC_SECRET:-}" ]; then
+  sed -i "s/^#* *rpc_secret.*/rpc_secret = \"${GARAGE_RPC_SECRET}\"/" "$CFG" 2>/dev/null || \
+  sed -i "/\[rpc\]/a rpc_secret = \"${GARAGE_RPC_SECRET}\"" "$CFG" 2>/dev/null || \
+  printf '\nrpc_secret = "%s"\n' "$GARAGE_RPC_SECRET" >> "$CFG"
+fi
+
+# admin_token
+if [ -n "${GARAGE_ADMIN_TOKEN:-}" ]; then
+  sed -i "s/^#* *admin_token.*/admin_token = \"${GARAGE_ADMIN_TOKEN}\"/" "$CFG" 2>/dev/null || \
+  printf 'admin_token = "%s"\n' "$GARAGE_ADMIN_TOKEN" >> "$CFG"
+fi
+
+# metrics_token
+if [ -n "${GARAGE_METRICS_TOKEN:-}" ]; then
+  sed -i "s/^#* *metrics_token.*/metrics_token = \"${GARAGE_METRICS_TOKEN}\"/" "$CFG" 2>/dev/null || \
+  printf 'metrics_token = "%s"\n' "$GARAGE_METRICS_TOKEN" >> "$CFG"
+fi
+
+echo "==> Secrets injected into garage.toml"
 
 # --- Start the server in the background -------------------------------------
 garage server &
