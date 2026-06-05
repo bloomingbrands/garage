@@ -8,12 +8,12 @@ over the S3 API to store contract documents.
 
 | File                 | Purpose                                                                   |
 |----------------------|---------------------------------------------------------------------------|
-| `docker-compose.yaml` | Garage server + one-shot init + `garage-webui` admin UI + volumes.        |
+| `docker-compose.yaml` | Garage server (self-bootstrapping) + `garage-webui` admin UI + volumes.   |
 | `garage.toml`        | Garage configuration (secrets come from env vars, not this file).         |
-| `Dockerfile.garage`  | Garage server image with `garage.toml` baked in.                          |
+| `Dockerfile.garage`  | Garage server on Alpine, config baked in, self-bootstrapping entrypoint.   |
 | `Dockerfile.webui`   | `garage-webui` image with `garage.toml` baked in.                         |
-| `Dockerfile.init`    | Minimal image (garage binary + shell + config) used only for init.        |
-| `init.sh`            | Idempotently creates the cluster layout, bucket and S3 key.               |
+| `server-init.sh`     | Entrypoint: starts the server, then idempotently creates the layout,      |
+|                      | bucket and S3 key using the local CLI, then keeps the server running.     |
 | `.env.example`       | Template for the required secrets/credentials.                            |
 
 > The config is **baked into each image** at build time rather than bind-mounted,
@@ -47,8 +47,9 @@ The browser admin panel here is the third-party **`garage-webui`**.
    - `BUCKET_NAME`        — e.g. `contracts`
    - `CAPACITY`           — e.g. `10G` (must be ≤ the disk Coolify gives the volume)
    - `AUTH_USER_PASS`         — `username:bcrypt-hash` for the admin UI login
-3. Deploy. The `garage-init` container runs once, prints `Garage init complete`,
-   and exits. The `garage` and `garage-webui` containers keep running.
+3. Deploy. The `garage` container starts, self-bootstraps (you'll see
+   `Garage init complete. Bucket 'contracts' is ready.` in its logs) and keeps
+   running alongside `garage-webui`.
 4. In Coolify, assign a **public domain to the `garage-webui` service → port 3909**.
    Open it, log in with your `AUTH_USER_PASS` credentials, and you can manage buckets,
    keys and layout from the browser.

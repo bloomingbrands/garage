@@ -1,4 +1,6 @@
 services:
+  # Garage server that self-bootstraps the single-node cluster on startup
+  # (layout, bucket and S3 key) — see server-init.sh.
   garage:
     build:
       context: .
@@ -6,8 +8,12 @@ services:
     container_name: garage
     restart: unless-stopped
     environment:
-      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
-      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - BUCKET_NAME=${BUCKET_NAME:-contracts}
+      - CAPACITY=${CAPACITY:-10G}
     volumes:
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
@@ -15,25 +21,6 @@ services:
       - garage_net
     # No host ports published: the S3 API (3900) and admin API (3903) stay on the
     # internal network only. Your app reaches Garage as http://garage:3900.
-
-  # One-shot container: initialises cluster layout, bucket and S3 key, then exits.
-  # Idempotent — safe to run on every deploy.
-  garage-init:
-    build:
-      context: .
-      dockerfile: Dockerfile.init
-    depends_on:
-      - garage
-    restart: "no"
-    environment:
-      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
-      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
-      BUCKET_NAME: ${BUCKET_NAME:-contracts}
-      CAPACITY: ${CAPACITY:-10G}
-    networks:
-      - garage_net
 
   # Web admin UI (third-party). Expose THIS service publicly in Coolify (port 3909)
   # and protect it with a login via AUTH_USER_PASS.
@@ -50,9 +37,9 @@ services:
       - S3_ENDPOINT_URL=http://garage:3900
       - S3_REGION=garage
       - API_ADMIN_KEY=${GARAGE_ADMIN_TOKEN}
-      # Pass-through (no "="): Compose forwards AUTH_USER_PASS from the Coolify
-      # environment verbatim, so the "$" in the bcrypt hash is NOT interpolated.
-      - AUTH_USER_PASS
+      # The bcrypt hash contains "$". In Coolify, set AUTH_USER_PASS with every "$"
+      # DOUBLED ($$) — Compose collapses $$ -> $ here, delivering the correct hash.
+      - AUTH_USER_PASS=${AUTH_USER_PASS}
     networks:
       - garage_net
     # In Coolify, assign a domain to this service pointing at container port 3909.

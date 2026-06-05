@@ -8,7 +8,9 @@ replication_factor = 1
 # Bind on IPv4 (0.0.0.0) so other containers on the Docker network can reach the
 # node over RPC. [::] can fail to accept IPv4 connections inside some containers.
 rpc_bind_addr = "0.0.0.0:3901"
-rpc_public_addr = "garage:3901"
+# Single node: the CLI/bootstrap runs in this same container and connects to the
+# node locally, so advertise the loopback address.
+rpc_public_addr = "127.0.0.1:3901"
 # rpc_secret is provided via the GARAGE_RPC_SECRET environment variable.
 
 [s3_api]
