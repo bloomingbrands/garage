@@ -1,25 +1,25 @@
-# Garage configuration for single-node deployment
-# Secrets (rpc_secret, admin_token, metrics_token) are injected via
-# environment variables: GARAGE_RPC_SECRET, GARAGE_ADMIN_TOKEN, GARAGE_METRICS_TOKEN
+# Garage S3-Compatible Storage Configuration
+# Based on: https://oneuptime.com/blog/post/2026-03-02-how-to-set-up-garage-s3-compatible-storage-on-ubuntu/view
 
+# RPC bind address (internal node communication)
+rpc_bind_addr = "0.0.0.0:3900"
+
+# Generate a strong secret with: openssl rand -hex 32
+# This must be set before first deployment.
+rpc_secret = "0da8101fd410d5704760d012e98514da3469f6e9e8ede8a6a1b8c70a0fe1982e"
+
+# Metadata and data directories inside the container
 metadata_dir = "/var/lib/garage/meta"
-data_dir = "/var/lib/garage/data"
-replication_factor = 1
-
-rpc_bind_addr = "[::]:3901"
-rpc_public_addr = "garage-os.blooming-brands.com:3901"
-rpc_secret = ""
+data_dir     = "/var/lib/garage/data"
 
 [s3_api]
-s3_region = "us-east-1"
-api_bind_addr = "[::]:3900"
+api_bind_addr = "0.0.0.0:3901"
+s3_region     = "us-east-1"
 
 [s3_web]
-bind_addr = "[::]:3902"
-root_domain = ".garage-os.blooming-brands.com"
+bind_addr   = "0.0.0.0:3902"
+root_domain = ".web.garage.local"
+index       = "index.html"
 
 [admin]
-api_bind_addr = "[::]:3903"
-admin_token = ""
-metrics_token = ""
-metrics_require_token = true
+api_bind_addr = "0.0.0.0:3903"

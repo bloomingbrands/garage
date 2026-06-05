@@ -1,6 +1,3 @@
-/target
-/tmp
-/pki
-**/*.rs.bk
-*.swp
-/.direnv
+.env
+.DS_Store
+*.log
