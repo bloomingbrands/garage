@@ -1,0 +1,128 @@
+services:
+  garage:
+    image: dxflrs/garage:v2.0.0
+    restart: unless-stopped
+    volumes:
+      - pfg0mgpbrsf6nixuo3idupgx_garage-meta:/var/lib/garage/meta
+      - pfg0mgpbrsf6nixuo3idupgx_garage-data:/var/lib/garage/data
+      - /opt/garage/garage.toml:/etc/garage.toml:ro
+    environment:
+      RUST_LOG: garage=info
+      COOLIFY_RESOURCE_UUID: pfg0mgpbrsf6nixuo3idupgx
+      COOLIFY_CONTAINER_NAME: garage-pfg0mgpbrsf6nixuo3idupgx
+      COOLIFY_FQDN: s3.blooming-brands.com
+      COOLIFY_URL: https://s3.blooming-brands.com
+      SERVICE_NAME_GARAGE: garage
+      SERVICE_NAME_GARAGE_WEBUI: garage-webui
+      SERVICE_URL_GARAGE: https://s3.blooming-brands.com
+      SERVICE_URL_GARAGE_WEBUI: https://garage.blooming-brands.com
+    ports:
+      - '3900'
+      - '3901'
+      - '3902'
+    healthcheck:
+      test:
+        - CMD
+        - /garage
+        - status
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    container_name: garage-pfg0mgpbrsf6nixuo3idupgx
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.1.1
+      - coolify.serviceId=11
+      - coolify.type=service
+      - coolify.name=garage-pfg0mgpbrsf6nixuo3idupgx
+      - coolify.resourceName=garage
+      - coolify.projectName=titan01
+      - coolify.serviceName=garage
+      - coolify.environmentName=production
+      - coolify.pullRequestId=0
+      - coolify.service.subId=13
+      - coolify.service.subType=application
+      - coolify.service.subName=garage
+      - traefik.enable=true
+      - traefik.http.routers.https-0-garage-s3.rule=Host(`s3.blooming-brands.com`) && PathPrefix(`/`)
+      - traefik.http.routers.https-0-garage-s3.entryPoints=https
+      - traefik.http.routers.https-0-garage-s3.tls=true
+      - traefik.http.routers.https-0-garage-s3.tls.certresolver=letsencrypt
+      - traefik.http.routers.https-0-garage-s3.service=garage-s3
+      - traefik.http.services.garage-s3.loadbalancer.server.port=3900
+      - traefik.http.routers.http-0-garage-s3.rule=Host(`s3.blooming-brands.com`) && PathPrefix(`/`)
+      - traefik.http.routers.http-0-garage-s3.entryPoints=http
+      - traefik.http.routers.http-0-garage-s3.middlewares=redirect-to-https
+      - traefik.http.routers.http-0-garage-s3.service=garage-s3-http
+      - traefik.http.services.garage-s3-http.loadbalancer.server.port=3900
+    networks:
+      - pfg0mgpbrsf6nixuo3idupgx
+
+  garage-webui:
+    image: khairul169/garage-webui:latest
+    restart: unless-stopped
+    volumes:
+      - /opt/garage/garage.toml:/etc/garage.toml:ro
+    environment:
+      CONFIG_PATH: /etc/garage.toml
+      API_BASE_URL: 'http://garage-pfg0mgpbrsf6nixuo3idupgx:3903'
+      S3_ENDPOINT_URL: 'http://garage-pfg0mgpbrsf6nixuo3idupgx:3900'
+      S3_REGION: garage
+      API_ADMIN_KEY: gov7peGBHXxlP8D42MzMtPWCEveHy7XuG2QR2thFVAo=
+      AUTH_USER_PASS: 'admin:$$2y$$05$$yIZDkdP6bIHH4nKwj9Ffe.zKYhw5xeF6vzXkWc01J.w4kQK2lCnMa'
+      HOST: 0.0.0.0
+      PORT: '3909'
+      COOLIFY_RESOURCE_UUID: pfg0mgpbrsf6nixuo3idupgx
+      COOLIFY_CONTAINER_NAME: garage-webui-pfg0mgpbrsf6nixuo3idupgx
+      COOLIFY_FQDN: garage.blooming-brands.com
+      COOLIFY_URL: https://garage.blooming-brands.com
+      SERVICE_NAME_GARAGE: garage
+      SERVICE_NAME_GARAGE_WEBUI: garage-webui
+      SERVICE_URL_GARAGE: https://s3.blooming-brands.com
+      SERVICE_URL_GARAGE_WEBUI: https://garage.blooming-brands.com
+    ports:
+      - '3909'
+    depends_on:
+      garage:
+        condition: service_started
+    container_name: garage-webui-pfg0mgpbrsf6nixuo3idupgx
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.1.1
+      - coolify.serviceId=11
+      - coolify.type=service
+      - coolify.name=garage-webui-pfg0mgpbrsf6nixuo3idupgx
+      - coolify.resourceName=garage
+      - coolify.projectName=titan01
+      - coolify.serviceName=garage-webui
+      - coolify.environmentName=production
+      - coolify.pullRequestId=0
+      - coolify.service.subId=14
+      - coolify.service.subType=application
+      - coolify.service.subName=garage-webui
+      - traefik.enable=true
+      - traefik.http.routers.https-0-garage-webui.rule=Host(`garage.blooming-brands.com`) && PathPrefix(`/`)
+      - traefik.http.routers.https-0-garage-webui.entryPoints=https
+      - traefik.http.routers.https-0-garage-webui.tls=true
+      - traefik.http.routers.https-0-garage-webui.tls.certresolver=letsencrypt
+      - traefik.http.routers.https-0-garage-webui.service=garage-webui
+      - traefik.http.services.garage-webui.loadbalancer.server.port=3909
+      - traefik.http.routers.http-0-garage-webui.rule=Host(`garage.blooming-brands.com`) && PathPrefix(`/`)
+      - traefik.http.routers.http-0-garage-webui.entryPoints=http
+      - traefik.http.routers.http-0-garage-webui.middlewares=redirect-to-https
+      - traefik.http.routers.http-0-garage-webui.service=garage-webui-http
+      - traefik.http.services.garage-webui-http.loadbalancer.server.port=3909
+    networks:
+      - pfg0mgpbrsf6nixuo3idupgx
+
+volumes:
+  pfg0mgpbrsf6nixuo3idupgx_garage-meta:
+    name: pfg0mgpbrsf6nixuo3idupgx_garage-meta
+  pfg0mgpbrsf6nixuo3idupgx_garage-data:
+    name: pfg0mgpbrsf6nixuo3idupgx_garage-data
+
+networks:
+  pfg0mgpbrsf6nixuo3idupgx:
+    name: pfg0mgpbrsf6nixuo3idupgx
+    external: true
