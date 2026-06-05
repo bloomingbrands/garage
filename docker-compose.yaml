@@ -1,13 +1,14 @@
 services:
   garage:
-    image: dxflrs/garage:v1.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile.garage
     container_name: garage
     restart: unless-stopped
     environment:
       GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
       GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
     volumes:
-      - ./garage.toml:/etc/garage.toml:ro
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
     networks:
@@ -31,15 +32,15 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       BUCKET_NAME: ${BUCKET_NAME:-contracts}
       CAPACITY: ${CAPACITY:-10G}
-    volumes:
-      - ./garage.toml:/etc/garage.toml:ro
     networks:
       - garage_net
 
   # Web admin UI (third-party). Expose THIS service publicly in Coolify (port 3909)
   # and protect it with a login via AUTH_USER_PASS.
   garage-webui:
-    image: khairul169/garage-webui:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.webui
     container_name: garage-webui
     restart: unless-stopped
     depends_on:
@@ -51,8 +52,6 @@ services:
       API_ADMIN_KEY: ${GARAGE_ADMIN_TOKEN}
       # username:bcrypt-hash — required so the public UI is not open to everyone.
       AUTH_USER_PASS: ${WEBUI_AUTH}
-    volumes:
-      - ./garage.toml:/etc/garage.toml:ro
     networks:
       - garage_net
     # In Coolify, assign a domain to this service pointing at container port 3909.

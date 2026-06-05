@@ -4,6 +4,7 @@ FROM dxflrs/garage:v1.1.0 AS garage
 
 FROM alpine:3.20
 COPY --from=garage /garage /usr/local/bin/garage
+COPY garage.toml /etc/garage.toml
 COPY init.sh /init.sh
 RUN chmod +x /init.sh
 ENTRYPOINT ["/bin/sh", "/init.sh"]

@@ -1,0 +1,3 @@
+# garage-webui with the Garage config baked in (avoids fragile host bind mounts).
+FROM khairul169/garage-webui:latest
+COPY garage.toml /etc/garage.toml

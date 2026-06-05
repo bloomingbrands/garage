@@ -10,9 +10,15 @@ over the S3 API to store contract documents.
 |----------------------|---------------------------------------------------------------------------|
 | `docker-compose.yaml` | Garage server + one-shot init + `garage-webui` admin UI + volumes.        |
 | `garage.toml`        | Garage configuration (secrets come from env vars, not this file).         |
-| `Dockerfile.init`    | Minimal image (garage binary + shell) used only for init.                 |
+| `Dockerfile.garage`  | Garage server image with `garage.toml` baked in.                          |
+| `Dockerfile.webui`   | `garage-webui` image with `garage.toml` baked in.                         |
+| `Dockerfile.init`    | Minimal image (garage binary + shell + config) used only for init.        |
 | `init.sh`            | Idempotently creates the cluster layout, bucket and S3 key.               |
 | `.env.example`       | Template for the required secrets/credentials.                            |
+
+> The config is **baked into each image** at build time rather than bind-mounted,
+> because Coolify does not reliably expose repo files as host bind mounts at runtime
+> (a bind mount to a missing file silently becomes an empty directory).
 
 ## Ports & what's exposed
 
