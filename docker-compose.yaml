@@ -12,15 +12,13 @@ services:
       - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - BUCKET_NAME=${BUCKET_NAME:-contracts}
-      - CAPACITY=${CAPACITY:-10G}
+      - BUCKET_NAME=${BUCKET_NAME:-blooming-brands}
+      - CAPACITY=${CAPACITY:-50G}
     volumes:
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
     networks:
       - garage_net
-    # No host ports published: the S3 API (3900) and admin API (3903) stay on the
-    # internal network only. Your app reaches Garage as http://garage:3900.
 
   # Web admin UI (third-party). Expose THIS service publicly in Coolify (port 3909)
   # and protect it with a login via AUTH_USER_PASS.
@@ -40,9 +38,10 @@ services:
       # The bcrypt hash contains "$". In Coolify, set AUTH_USER_PASS with every "$"
       # DOUBLED ($$) — Compose collapses $$ -> $ here, delivering the correct hash.
       - AUTH_USER_PASS=${AUTH_USER_PASS}
+      - HOST=0.0.0.0
+      - PORT=3909
     networks:
       - garage_net
-    # In Coolify, assign a domain to this service pointing at container port 3909.
 
 volumes:
   garage_meta:

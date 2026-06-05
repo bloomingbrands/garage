@@ -4,8 +4,8 @@
 # automatically, no node-id or RPC host needed. Safe to run on every deploy.
 set -u
 
-BUCKET="${BUCKET_NAME:-contracts}"
-CAPACITY="${CAPACITY:-10G}"
+BUCKET="${BUCKET_NAME:-blooming-brands}"
+CAPACITY="${CAPACITY:-50G}"
 
 # --- Start the server in the background -------------------------------------
 garage server &
@@ -34,7 +34,7 @@ echo "    Node is up."
 
 # --- 1. Cluster layout -------------------------------------------------------
 if garage status | grep -q "NO ROLE ASSIGNED"; then
-  NODE_ID=$(garage status | grep -oE '^[0-9a-f]{16,}' | head -n1)
+  NODE_ID=$(garage node id 2>/dev/null | head -1 | cut -d'@' -f1)
   echo "==> Assigning layout to node $NODE_ID (capacity $CAPACITY)..."
   garage layout assign -z dc1 -c "$CAPACITY" "$NODE_ID"
   CUR=$(garage layout show 2>/dev/null | sed -n 's/.*layout version: *\([0-9]*\).*/\1/p' | head -n1)

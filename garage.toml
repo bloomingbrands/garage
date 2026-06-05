@@ -1,29 +1,27 @@
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
-db_engine = "lmdb"
+db_engine = "sqlite"
 
 # Single-node standalone: one copy of each object.
 replication_factor = 1
 
-# Bind on IPv4 (0.0.0.0) so other containers on the Docker network can reach the
-# node over RPC. [::] can fail to accept IPv4 connections inside some containers.
+# Bind on 0.0.0.0 so other containers on the Docker network can reach us.
 rpc_bind_addr = "0.0.0.0:3901"
-# Single node: the CLI/bootstrap runs in this same container and connects to the
-# node locally, so advertise the loopback address.
+# Single node: the CLI/bootstrap runs in this same container and connects
+# locally, so advertise loopback.
 rpc_public_addr = "127.0.0.1:3901"
 # rpc_secret is provided via the GARAGE_RPC_SECRET environment variable.
 
 [s3_api]
 s3_region = "garage"
 api_bind_addr = "0.0.0.0:3900"
-# Path-style requests work without this; needed only for virtual-host-style buckets.
-root_domain = ".s3.garage.local"
+root_domain = ".s3.blooming-brands.com"
 
 [s3_web]
 bind_addr = "0.0.0.0:3902"
-root_domain = ".web.garage.local"
+root_domain = ".web.blooming-brands.com"
 index = "index.html"
 
 [admin]
 api_bind_addr = "0.0.0.0:3903"
-# admin_token / metrics_token provided via GARAGE_ADMIN_TOKEN / GARAGE_METRICS_TOKEN.
+# admin_token / metrics_token provided via env vars.
