@@ -46,8 +46,8 @@ metadata_dir = "${GARAGE_METADATA_DIR}"
 data_dir     = "${GARAGE_DATA_DIR}"
 
 # Single-node deployment
-replication_level  = 1
-consistency_mode   = "unsafe"
+replication_factor = 1
+consistency_mode   = "consistent"
 
 [s3_api]
 api_bind_addr = "${GARAGE_S3_API_BIND_ADDR}"
@@ -117,6 +117,18 @@ init_cluster() {
 # ---------------------------------------------------------------------------
 generate_config
 mkdir -p "${GARAGE_METADATA_DIR}" "${GARAGE_DATA_DIR}"
+
+# Detect stale database from a previous failed initialization
+if [ ! -f "${MARKER}" ] && [ -d "${GARAGE_METADATA_DIR}/db.lmdb" ]; then
+    echo ""
+    echo "⚠️  WARNING: Old metadata database found but no init marker."
+    echo "    This usually means a previous deployment failed and left stale state."
+    echo "    Garage will likely error with 'replication_mode vs replication_factor'."
+    echo ""
+    echo "    FIX: In Coolify, delete this resource's Persistent Storage, then redeploy."
+    echo "    Or SSH into the server and run:  docker volume ls  &&  docker volume rm <garage-volume>"
+    echo ""
+fi
 
 if [ -f "${MARKER}" ]; then
     echo "Garage already initialized. Starting server..."
