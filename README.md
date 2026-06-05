@@ -8,7 +8,7 @@ over the S3 API to store contract documents.
 
 | File                 | Purpose                                                                   |
 |----------------------|---------------------------------------------------------------------------|
-| `docker-compose.yml` | Garage server + one-shot init + `garage-webui` admin UI + volumes.        |
+| `docker-compose.yaml` | Garage server + one-shot init + `garage-webui` admin UI + volumes.        |
 | `garage.toml`        | Garage configuration (secrets come from env vars, not this file).         |
 | `Dockerfile.init`    | Minimal image (garage binary + shell) used only for init.                 |
 | `init.sh`            | Idempotently creates the cluster layout, bucket and S3 key.               |
@@ -55,7 +55,7 @@ same Docker network by default. Do one of the following so the app can resolve
 
 - **Recommended:** in Coolify, enable **"Connect to Predefined Network"** on *both*
   the app resource and this Garage resource, then use `http://garage:3900`.
-- Or move the app's service into this same `docker-compose.yml` (one resource, one
+- Or move the app's service into this same `docker-compose.yaml` (one resource, one
   network) — then `http://garage:3900` works with no extra config.
 
 ## How your app connects
@@ -107,5 +107,5 @@ await s3.send(new PutObjectCommand({
   docker compose exec garage /garage bucket list
   docker compose exec garage /garage key list
   ```
-- **Pinned version:** `dxflrs/garage:v1.1.0`. Bump in `docker-compose.yml` and
+- **Pinned version:** `dxflrs/garage:v1.1.0`. Bump in `docker-compose.yaml` and
   `Dockerfile.init` together when upgrading.
