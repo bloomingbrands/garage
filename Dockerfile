@@ -2,7 +2,8 @@
 # Garage S3-Compatible Storage — Coolify Dockerfile
 # =============================================================================
 # We copy the official static binary (scratch-based, no shell) into Alpine
-# so we can run an entrypoint script that handles cluster initialization.
+# so we can run an entrypoint script that generates /var/lib/garage/garage.toml
+# and handles cluster initialization.
 #
 # Official image: https://hub.docker.com/r/dxflrs/garage
 # Source Dockerfile: https://git.deuxfleurs.fr/networkException/garage/src/branch/main/Dockerfile

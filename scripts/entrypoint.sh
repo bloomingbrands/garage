@@ -1,10 +1,10 @@
 #!/bin/sh
 # POSIX entrypoint for Garage on Coolify
-# Auto-generates /etc/garage.toml from env vars, bootstraps cluster on first boot.
+# Auto-generates /var/lib/garage/garage.toml from env vars, bootstraps cluster on first boot.
 
 set -e
 
-CONFIG="/etc/garage.toml"
+CONFIG="/var/lib/garage/garage.toml"
 MARKER="/var/lib/garage/.initialized"
 
 # ---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ index       = "${GARAGE_WEB_INDEX}"
 [admin]
 api_bind_addr = "${GARAGE_ADMIN_API_BIND_ADDR}"
 EOF
-    echo "✅ /etc/garage.toml generated."
+    echo "✅ ${CONFIG} generated."
 }
 
 # ---------------------------------------------------------------------------

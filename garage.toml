@@ -2,7 +2,7 @@
 # Reference garage.toml (what the container generates internally)
 # =============================================================================
 # DO NOT commit real secrets to this file.
-# The entrypoint script writes /etc/garage.toml automatically from env vars.
+# The entrypoint script writes /var/lib/garage/garage.toml automatically from env vars.
 # This file is kept in the repo only as documentation.
 # =============================================================================
 
