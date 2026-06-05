@@ -15,6 +15,10 @@ FROM dxflrs/garage:v1.0.1 AS garage-binary
 # --- Stage 2: Alpine runtime with shell + init script ---
 FROM alpine:3.19
 
+# Cache-busting arg: change this in Coolify env vars to force a full rebuild
+ARG BUILD_TIMESTAMP
+RUN echo "Build timestamp: ${BUILD_TIMESTAMP}"
+
 RUN apk add --no-cache ca-certificates
 
 # Copy the official statically-linked binary
