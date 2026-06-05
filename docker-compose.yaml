@@ -1,12 +1,9 @@
 services:
   garage:
-    image: 'dxflrs/garage:v2.0.0'
+    build:
+      context: .
+      dockerfile: Dockerfile.garage
     restart: unless-stopped
-    volumes:
-      - 'garage_meta:/var/lib/garage/meta'
-      - 'garage_data:/var/lib/garage/data'
-      - './garage.toml:/etc/garage.toml:ro'
-      - './server-init.sh:/server-init.sh:ro'
     environment:
       GARAGE_RPC_SECRET: '${SERVICE_PASSWORD_RPCSECRET}'
       GARAGE_ADMIN_TOKEN: '${SERVICE_PASSWORD_ADMINTOKEN}'
@@ -21,7 +18,9 @@ services:
       COOLIFY_URL: '${SERVICE_URL_GARAGE}'
       SERVICE_NAME_GARAGE: garage
       SERVICE_NAME_GARAGE_WEBUI: garage-webui
-    entrypoint: ['/bin/sh', '/server-init.sh']
+    volumes:
+      - 'garage_meta:/var/lib/garage/meta'
+      - 'garage_data:/var/lib/garage/data'
     healthcheck:
       test:
         - CMD-SHELL
@@ -44,10 +43,10 @@ services:
       - default
 
   garage-webui:
-    image: 'khairul169/garage-webui:latest'
+    build:
+      context: .
+      dockerfile: Dockerfile.webui
     restart: unless-stopped
-    volumes:
-      - './garage.toml:/etc/garage.toml:ro'
     environment:
       CONFIG_PATH: /etc/garage.toml
       API_BASE_URL: 'http://garage:3903'
