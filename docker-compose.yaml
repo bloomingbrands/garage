@@ -46,12 +46,13 @@ services:
     depends_on:
       - garage
     environment:
-      API_BASE_URL: "http://garage:3903"
-      S3_ENDPOINT_URL: "http://garage:3900"
-      S3_REGION: "garage"
-      API_ADMIN_KEY: ${GARAGE_ADMIN_TOKEN}
-      # username:bcrypt-hash — required so the public UI is not open to everyone.
-      AUTH_USER_PASS: ${WEBUI_AUTH}
+      - API_BASE_URL=http://garage:3903
+      - S3_ENDPOINT_URL=http://garage:3900
+      - S3_REGION=garage
+      - API_ADMIN_KEY=${GARAGE_ADMIN_TOKEN}
+      # Pass-through (no "="): Compose forwards AUTH_USER_PASS from the Coolify
+      # environment verbatim, so the "$" in the bcrypt hash is NOT interpolated.
+      - AUTH_USER_PASS
     networks:
       - garage_net
     # In Coolify, assign a domain to this service pointing at container port 3909.

@@ -33,7 +33,7 @@ The browser admin panel here is the third-party **`garage-webui`**.
 
 > The S3 API and raw admin API are never published to the host or the internet.
 > Only `garage-webui` gets a public domain, and it requires a username/password
-> (`WEBUI_AUTH`).
+> (`AUTH_USER_PASS`).
 
 ## Deploy on Coolify
 
@@ -46,11 +46,11 @@ The browser admin panel here is the third-party **`garage-webui`**.
    - `S3_SECRET_KEY`      — `openssl rand -hex 32`
    - `BUCKET_NAME`        — e.g. `contracts`
    - `CAPACITY`           — e.g. `10G` (must be ≤ the disk Coolify gives the volume)
-   - `WEBUI_AUTH`         — `username:bcrypt-hash` for the admin UI login
+   - `AUTH_USER_PASS`         — `username:bcrypt-hash` for the admin UI login
 3. Deploy. The `garage-init` container runs once, prints `Garage init complete`,
    and exits. The `garage` and `garage-webui` containers keep running.
 4. In Coolify, assign a **public domain to the `garage-webui` service → port 3909**.
-   Open it, log in with your `WEBUI_AUTH` credentials, and you can manage buckets,
+   Open it, log in with your `AUTH_USER_PASS` credentials, and you can manage buckets,
    keys and layout from the browser.
 
 ### Connecting your app (same Coolify server)
