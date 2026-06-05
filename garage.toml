@@ -1,0 +1,25 @@
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "lmdb"
+
+# Single-node standalone: one copy of each object.
+replication_factor = 1
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "garage:3901"
+# rpc_secret is provided via the GARAGE_RPC_SECRET environment variable.
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+# Path-style requests work without this; needed only for virtual-host-style buckets.
+root_domain = ".s3.garage.local"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.local"
+index = "index.html"
+
+[admin]
+api_bind_addr = "[::]:3903"
+# admin_token / metrics_token provided via GARAGE_ADMIN_TOKEN / GARAGE_METRICS_TOKEN.
