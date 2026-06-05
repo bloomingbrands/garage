@@ -4,7 +4,7 @@
 # automatically, no node-id or RPC host needed. Safe to run on every deploy.
 set -u
 
-BUCKET="${BUCKET_NAME:-blooming-brands}"
+BUCKET="${BUCKET_NAME:-customer-data}"
 CAPACITY="${CAPACITY:-50G}"
 
 # --- Start the server in the background -------------------------------------
