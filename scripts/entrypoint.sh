@@ -62,6 +62,9 @@ index       = "${GARAGE_WEB_INDEX}"
 api_bind_addr = "${GARAGE_ADMIN_API_BIND_ADDR}"
 EOF
     echo "✅ ${CONFIG} generated."
+    echo "--- Generated config ---"
+    cat "${CONFIG}"
+    echo "--- End config ---"
 }
 
 # ---------------------------------------------------------------------------
