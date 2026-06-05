@@ -2,15 +2,14 @@ metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
 db_engine = "sqlite"
 
-# Single-node standalone: one copy of each object.
 replication_factor = 1
 
-# Bind on 0.0.0.0 so other containers on the Docker network can reach us.
 rpc_bind_addr = "0.0.0.0:3901"
-# Single node: the CLI/bootstrap runs in this same container and connects
-# locally, so advertise loopback.
 rpc_public_addr = "127.0.0.1:3901"
-# rpc_secret is provided via the GARAGE_RPC_SECRET environment variable.
+# rpc_secret, admin_token, metrics_token come from env vars:
+#   GARAGE_RPC_SECRET  (set by Coolify SERVICE_PASSWORD_RPCSECRET)
+#   GARAGE_ADMIN_TOKEN (set by Coolify SERVICE_PASSWORD_ADMINTOKEN)
+#   GARAGE_METRICS_TOKEN (set by Coolify SERVICE_PASSWORD_METRICSTOKEN)
 
 [s3_api]
 s3_region = "garage"
@@ -24,4 +23,4 @@ index = "index.html"
 
 [admin]
 api_bind_addr = "0.0.0.0:3903"
-# admin_token / metrics_token provided via env vars.
+# admin_token and metrics_token set via env vars

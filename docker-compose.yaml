@@ -1,51 +1,89 @@
 services:
-  # Garage server that self-bootstraps the single-node cluster on startup
-  # (layout, bucket and S3 key) — see server-init.sh.
   garage:
-    build:
-      context: .
-      dockerfile: Dockerfile.garage
-    container_name: garage
+    image: 'dxflrs/garage:v2.0.0'
     restart: unless-stopped
-    environment:
-      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
-      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - BUCKET_NAME=${BUCKET_NAME:-customer-data}
-      - CAPACITY=${CAPACITY:-50G}
     volumes:
-      - garage_meta:/var/lib/garage/meta
-      - garage_data:/var/lib/garage/data
-    networks:
-      - garage_net
-
-  # Web admin UI (third-party). Expose THIS service publicly in Coolify (port 3909)
-  # and protect it with a login via AUTH_USER_PASS.
-  garage-webui:
-    build:
-      context: .
-      dockerfile: Dockerfile.webui
-    container_name: garage-webui
-    restart: unless-stopped
-    depends_on:
-      - garage
+      - 'garage_meta:/var/lib/garage/meta'
+      - 'garage_data:/var/lib/garage/data'
+      - './garage.toml:/etc/garage.toml:ro'
+      - './server-init.sh:/server-init.sh:ro'
     environment:
-      - API_BASE_URL=http://garage:3903
-      - S3_ENDPOINT_URL=http://garage:3900
-      - S3_REGION=garage
-      - API_ADMIN_KEY=${GARAGE_ADMIN_TOKEN}
-      # The bcrypt hash contains "$". In Coolify, set AUTH_USER_PASS with every "$"
-      # DOUBLED ($$) — Compose collapses $$ -> $ here, delivering the correct hash.
-      - AUTH_USER_PASS=${AUTH_USER_PASS}
-      - HOST=0.0.0.0
-      - PORT=3909
+      GARAGE_RPC_SECRET: '${SERVICE_PASSWORD_RPCSECRET}'
+      GARAGE_ADMIN_TOKEN: '${SERVICE_PASSWORD_ADMINTOKEN}'
+      GARAGE_METRICS_TOKEN: '${SERVICE_PASSWORD_METRICSTOKEN}'
+      S3_ACCESS_KEY: '${S3_ACCESS_KEY}'
+      S3_SECRET_KEY: '${S3_SECRET_KEY}'
+      BUCKET_NAME: '${BUCKET_NAME:-customer-data}'
+      CAPACITY: '${CAPACITY:-50G}'
+      COOLIFY_RESOURCE_UUID: '${COOLIFY_RESOURCE_UUID}'
+      COOLIFY_CONTAINER_NAME: 'garage-${COOLIFY_RESOURCE_UUID}'
+      COOLIFY_FQDN: '${SERVICE_FQDN_GARAGE}'
+      COOLIFY_URL: '${SERVICE_URL_GARAGE}'
+      SERVICE_NAME_GARAGE: garage
+      SERVICE_NAME_GARAGE_WEBUI: garage-webui
+    entrypoint: ['/bin/sh', '/server-init.sh']
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - '/garage status || exit 1'
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    container_name: 'garage-${COOLIFY_RESOURCE_UUID}'
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.1.1
+      - coolify.type=service
+      - coolify.resourceName=garage
+      - coolify.projectName=titan01
+      - coolify.serviceName=garage
+      - coolify.environmentName=production
+      - coolify.pullRequestId=0
     networks:
-      - garage_net
+      - default
+
+  garage-webui:
+    image: 'khairul169/garage-webui:latest'
+    restart: unless-stopped
+    volumes:
+      - './garage.toml:/etc/garage.toml:ro'
+    environment:
+      CONFIG_PATH: /etc/garage.toml
+      API_BASE_URL: 'http://garage:3903'
+      S3_ENDPOINT_URL: 'http://garage:3900'
+      S3_REGION: garage
+      API_ADMIN_KEY: '${SERVICE_PASSWORD_ADMINTOKEN}'
+      AUTH_USER_PASS: '${SERVICE_PASSWORD_WEBUI}'
+      HOST: 0.0.0.0
+      PORT: '3909'
+      COOLIFY_RESOURCE_UUID: '${COOLIFY_RESOURCE_UUID}'
+      COOLIFY_CONTAINER_NAME: 'garage-webui-${COOLIFY_RESOURCE_UUID}'
+      COOLIFY_FQDN: '${SERVICE_FQDN_GARAGE_WEBUI}'
+      COOLIFY_URL: '${SERVICE_URL_GARAGE_WEBUI}'
+      SERVICE_NAME_GARAGE: garage
+      SERVICE_NAME_GARAGE_WEBUI: garage-webui
+    ports:
+      - '3909'
+    depends_on:
+      garage:
+        condition: service_started
+    container_name: 'garage-webui-${COOLIFY_RESOURCE_UUID}'
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.1.1
+      - coolify.type=service
+      - coolify.resourceName=garage
+      - coolify.projectName=titan01
+      - coolify.serviceName=garage-webui
+      - coolify.environmentName=production
+      - coolify.pullRequestId=0
+    networks:
+      - default
 
 volumes:
   garage_meta:
   garage_data:
 
 networks:
-  garage_net:
+  default:
