@@ -45,6 +45,9 @@ rpc_secret    = "${GARAGE_RPC_SECRET}"
 metadata_dir = "${GARAGE_METADATA_DIR}"
 data_dir     = "${GARAGE_DATA_DIR}"
 
+# Single-node deployment: 1 replica (legacy mode)
+replication_mode = "1"
+
 [s3_api]
 api_bind_addr = "${GARAGE_S3_API_BIND_ADDR}"
 s3_region     = "${GARAGE_S3_REGION}"
