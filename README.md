@@ -64,6 +64,27 @@ admin UI, built **from source** and shipped as **one Coolify Application**.
    so Garage's vhost-style routing matches your domains.
 6. **Deploy.**
 
+## Configuration — everything is an environment variable
+
+Garage's entire `garage.toml` is **generated at container start from environment
+variables** by `server-init.sh`, so an admin can change any setting from the
+Coolify UI without editing files or rebuilding. See **`.env.example`** for the
+complete, annotated list. Highlights:
+
+- **Secrets** (`GARAGE_RPC_SECRET`, `GARAGE_ADMIN_TOKEN`, `GARAGE_METRICS_TOKEN`)
+  are read by Garage **natively from the environment** and are never written to
+  disk.
+- **Domains** (`S3_DOMAIN`, `WEB_DOMAIN`) are host-only and auto-normalized — a
+  full `https://host:port` is accepted and reduced to the host.
+- **Required with defaults:** `BUCKET_NAME`/`S3_BUCKET`, `CAPACITY`, `ZONE`,
+  `S3_REGION`, `GARAGE_DB_ENGINE`, `GARAGE_REPLICATION_FACTOR`, the bind addrs.
+- **Opt-in (Garage default applies if unset):** fsync, scrubbing, metadata
+  snapshots, compression level, block sizing, LMDB map size, consistency mode,
+  bootstrap peers / replication factor (multi-node), K2V, punycode, and more.
+
+Changing a value and redeploying (or restarting the container) regenerates the
+config — data in the volumes is untouched.
+
 > **DNS:** for vhost-style S3 (`bucket.s3.blooming-brands.com`) and static web
 > hosting, add wildcard records `*.s3...` and `*.media/web...`. Path-style S3
 > (`s3.blooming-brands.com/<bucket>`) works without wildcards — see below.

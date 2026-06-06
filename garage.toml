@@ -1,8 +1,12 @@
-# Garage configuration template.
+# NOTE: This file is a placeholder. At container startup, /server-init.sh
+# REGENERATES /etc/garage.toml entirely from environment variables (see
+# .env.example / README for the full list). Editing this file has no effect at
+# runtime — change the env vars in Coolify instead.
 #
-# The rpc_secret / admin_token / metrics_token and the two root_domain lines are
-# rewritten at container start by /server-init.sh from environment variables
-# (set in Coolify). Do NOT commit real secrets here.
+# The block below is only a representative example of what gets generated with
+# default settings. Secrets (rpc_secret, admin_token, metrics_token) are NOT
+# written to the file; Garage reads them from GARAGE_RPC_SECRET /
+# GARAGE_ADMIN_TOKEN / GARAGE_METRICS_TOKEN in the environment.
 
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
@@ -12,19 +16,16 @@ replication_factor = 1
 
 rpc_bind_addr = "[::]:3901"
 rpc_public_addr = "127.0.0.1:3901"
-rpc_secret = "__RPC_SECRET__"
 
 [s3_api]
 s3_region = "Germany-1"
 api_bind_addr = "[::]:3900"
-root_domain = ".s3.example.com"
+root_domain = ".s3.garage.localhost"
 
 [s3_web]
 bind_addr = "[::]:3902"
-root_domain = ".web.example.com"
+root_domain = ".web.garage.localhost"
 index = "index.html"
 
 [admin]
 api_bind_addr = "[::]:3903"
-admin_token = "__ADMIN_TOKEN__"
-metrics_token = "__METRICS_TOKEN__"
