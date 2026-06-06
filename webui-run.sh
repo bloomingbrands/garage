@@ -12,8 +12,10 @@ export S3_ENDPOINT_URL="${S3_ENDPOINT_URL:-${S3_ENDPOINT:-http://127.0.0.1:3900}
 export S3_REGION="${S3_REGION:-Germany-1}"
 export API_ADMIN_KEY="${API_ADMIN_KEY:-${GARAGE_ADMIN_TOKEN:-}}"
 export AUTH_USER_PASS="${AUTH_USER_PASS:-}"
-export HOST="${WEBUI_HOST:-${HOST:-0.0.0.0}}"
-export PORT="${WEBUI_PORT:-${PORT:-3909}}"
+export HOST="${WEBUI_HOST:-0.0.0.0}"
+# Bind a fixed UI port. Do NOT inherit a generic $PORT (Coolify injects PORT=3000),
+# which would put the UI on the wrong port vs. EXPOSE/healthcheck (3909).
+export PORT="${WEBUI_PORT:-3909}"
 # Optional: serve the UI under a sub-path (e.g. /garage).
 [ -n "${BASE_PATH:-}" ] && export BASE_PATH="$BASE_PATH"
 
