@@ -42,7 +42,7 @@ S3_ROOT_DOMAIN=".$(normalize_host "${S3_DOMAIN:-s3.garage.localhost}")"
 
 BUCKET="${BUCKET_NAME:-${S3_BUCKET:-customer-data}}"
 CAPACITY="${CAPACITY:-20G}"
-ZONE="${ZONE:-dc1}"
+ZONE="${ZONE:-Germany-1}"
 
 # --- Validate required secrets (read natively by Garage from env) -----------
 missing=""
@@ -150,15 +150,23 @@ until OUT=$(garage status 2>&1); do
 done
 echo "    Node is up."
 
-# --- Cluster layout ----------------------------------------------------------
-if garage status | grep -q "NO ROLE ASSIGNED"; then
+# --- Cluster layout (assign on first boot; reconcile zone/capacity after) ----
+assign_layout() {
   NODE_ID=$(garage node id 2>/dev/null | head -1 | cut -d'@' -f1)
-  echo "==> Assigning layout to node $NODE_ID (zone $ZONE, capacity $CAPACITY)..."
+  echo "==> Assigning layout: node=$NODE_ID zone=$ZONE capacity=$CAPACITY"
   garage layout assign -z "$ZONE" -c "$CAPACITY" "$NODE_ID"
   CUR=$(garage layout show 2>/dev/null | sed -n 's/.*layout version: *\([0-9]*\).*/\1/p' | head -n1)
   garage layout apply --version $(( ${CUR:-0} + 1 ))
+}
+if garage status | grep -q "NO ROLE ASSIGNED"; then
+  assign_layout
+elif ! garage layout show 2>/dev/null | grep -qw "$ZONE"; then
+  # Node already has a role but with a different zone — relabel it (safe for a
+  # single node; just updates the topology label, data is untouched).
+  echo "==> Layout zone differs from desired ($ZONE); restaging..."
+  assign_layout
 else
-  echo "==> Layout already assigned, skipping."
+  echo "==> Layout already assigned with zone $ZONE, skipping."
 fi
 
 # --- Bucket ------------------------------------------------------------------
