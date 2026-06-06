@@ -34,7 +34,8 @@ RUN --mount=type=cache,id=garage-cargo-registry,target=/usr/local/cargo/registry
     && cp target/release/garage /garage
 
 # ---- Stage 2: build the web UI frontend -------------------------------------
-FROM node:20-slim AS webui-frontend
+# Node 22+ is required by pnpm 11 (it uses the node:sqlite builtin).
+FROM node:22-slim AS webui-frontend
 WORKDIR /app
 RUN npm install -g corepack@latest && corepack enable
 # pnpm-workspace.yaml carries the build-script allowlist (allowBuilds) and must
