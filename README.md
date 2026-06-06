@@ -1,77 +1,107 @@
-# Garage Object Storage for Blooming Brands
+# Garage Object Storage — Coolify deployment
 
-A self-contained, single-node [Garage](https://garagehq.deuxfleurs.fr/) S3-compatible
-object store, ready to deploy on **Coolify** from this repo. The Blooming Brands app
-connects to it over the S3 API to store contracts, documents, and invoices.
+A self-contained, single-node [Garage](https://garagehq.deuxfleurs.fr/)
+S3-compatible object store **plus** the [garage-webui](https://github.com/khairul169/garage-webui)
+admin UI, built **from source** and shipped as **one Coolify Application**.
 
-## What's in here
+- **Garage v2.3.0**, compiled from the `garage/` source tree in this repo.
+- **garage-webui**, compiled from the `garage-webui/` source tree in this repo.
+- Both run in a single container managed by `supervisord`.
+- Self-bootstrapping: on first boot it creates the cluster layout, a bucket and
+  an S3 key. Idempotent — safe to redeploy without data loss.
 
-| File                 | Purpose                                                                     |
-|----------------------|-----------------------------------------------------------------------------|
-| `docker-compose.yaml`| Garage server (self-bootstrapping) + `garage-webui` admin UI + volumes.      |
-| `garage.toml`        | Garage configuration (secrets come from env vars, not this file).           |
-| `Dockerfile.garage`  | Garage v2.0.0 on Alpine, config baked in, self-bootstrapping entrypoint.     |
-| `Dockerfile.webui`   | `garage-webui` image with `garage.toml` baked in.                           |
-| `server-init.sh`     | Entrypoint: starts the server, then idempotently creates the layout,        |
-|                      | bucket and S3 key using the local CLI, then keeps the server running.       |
-| `.env.example`       | Template for the required secrets/credentials.                              |
+## Repository layout
 
-> The config is **baked into each image** at build time rather than bind-mounted,
-> because Coolify does not reliably expose repo files as host bind mounts at runtime
-> (a bind mount to a missing file silently becomes an empty directory).
+| Path                | Purpose                                                              |
+|---------------------|---------------------------------------------------------------------|
+| `Dockerfile`        | 4-stage build: Garage (Rust) → web UI (pnpm) → backend (Go) → runtime |
+| `garage/`           | Vendored Garage source (lean: `Cargo.*` + `src/`)                   |
+| `garage-webui/`     | Web UI source (frontend + Go backend)                               |
+| `garage.toml`       | Config template; secrets/domains are injected at startup             |
+| `server-init.sh`    | Entrypoint: injects config, starts server, bootstraps the cluster   |
+| `webui-run.sh`      | Launches the web UI against the local APIs                          |
+| `supervisord.conf`  | Runs `garage` + `garage-webui` together                            |
+| `.env.example`      | All environment variables you need to set in Coolify               |
+
+## Ports
+
+| Port | Service        | Purpose                                  |
+|------|----------------|------------------------------------------|
+| 3900 | S3 API         | object storage API for your apps         |
+| 3901 | RPC            | internal cluster RPC (keep private)      |
+| 3902 | Web            | static website hosting from buckets      |
+| 3903 | Admin          | admin API **and** Prometheus `/metrics`  |
+| 3909 | Web UI         | browser admin/management UI (has login)  |
 
 ## Deploy on Coolify
 
-1. **New Resource → Docker Compose**, point it at this repository.
-2. In the resource's **Environment Variables**, add the keys from `.env.example`
-   with **freshly generated** production values:
-   - `GARAGE_RPC_SECRET`  — `openssl rand -hex 32`
-   - `GARAGE_ADMIN_TOKEN` — `openssl rand -base64 32`
-   - `S3_ACCESS_KEY`      — `GK` + `openssl rand -hex 12`
-   - `S3_SECRET_KEY`      — `openssl rand -hex 32`
-   - `BUCKET_NAME`        — `blooming-brands`
-   - `CAPACITY`           — `50G`
-   - `AUTH_USER_PASS`     — `username:bcrypt-hash` for the admin UI login
-3. Deploy. The `garage` container starts, self-bootstraps and keeps running
-   alongside `garage-webui`.
-4. In Coolify, assign domains:
-   - **`garage-webui` service → port 3909** → e.g. `garage.blooming-brands.com`
-   - The S3 API (`garage:3900`) stays internal unless you also expose it
+1. **Titan01 → Production → + New → Application → Public/Private Repository**,
+   point it at this repo (`bloomingbrands/garage`).
+2. **Build Pack: `Dockerfile`** (Coolify uses the root `Dockerfile`).
+   - First build compiles Garage from source — expect **~15–30 min**. Later
+     builds are fast thanks to the BuildKit cache mounts.
+3. **Environment Variables** — add everything from `.env.example` with real
+   production values. Generate secrets:
+   ```bash
+   openssl rand -hex 32     # GARAGE_RPC_SECRET, S3_SECRET_KEY
+   openssl rand -base64 32  # GARAGE_ADMIN_TOKEN, GARAGE_METRICS_TOKEN
+   echo "GK$(openssl rand -hex 12)"            # S3_ACCESS_KEY
+   htpasswd -nbB admin 'your-ui-password'      # AUTH_USER_PASS (user:bcrypt)
+   ```
+   Keep `CAPACITY=20G` (the deployment cap).
+4. **Persistent storage** — add two volumes so data survives redeploys:
+   - `/var/lib/garage/meta`
+   - `/var/lib/garage/data`
+5. **Ports & Domains** — set **Ports Exposes** to `3900,3902,3903,3909`, then map
+   a domain to each port in the Domains field (one per line, `:port` suffix):
+   ```
+   https://garage.blooming-brands.com:3909   # Web UI (management)
+   https://s3.blooming-brands.com:3900       # S3 API
+   https://media.blooming-brands.com:3902     # static web hosting
+   https://admin.blooming-brands.com:3903     # admin API + /metrics
+   ```
+   Set the matching `S3_DOMAIN` / `WEB_DOMAIN` env vars (host only, no scheme)
+   so Garage's vhost-style routing matches your domains.
+6. **Deploy.**
 
-### Connecting your app (same Coolify server)
+> **DNS:** for vhost-style S3 (`bucket.s3.blooming-brands.com`) and static web
+> hosting, add wildcard records `*.s3...` and `*.media/web...`. Path-style S3
+> (`s3.blooming-brands.com/<bucket>`) works without wildcards — see below.
 
-Your app and this stack are separate Coolify resources. Enable **"Connect to Predefined
-Network"** on *both* the app resource and this Garage resource, then use:
+## Connecting an app (same Coolify server)
+
+Enable **"Connect to Predefined Network"** on both this Application and your app,
+then point your S3 client at the internal address:
 
 ```
-S3 Endpoint:    http://garage:3900        (internal, same network)
-                https://s3.blooming-brands.com  (if you expose it)
-Region:         garage
-Access key ID:  <S3_ACCESS_KEY>
-Secret key:     <S3_SECRET_KEY>
-Bucket:         blooming-brands
-Force path style: true   <-- important for Garage
+S3 Endpoint:       http://<garage-container>:3900   (internal) or https://s3.blooming-brands.com
+Region:            garage
+Access key ID:     <S3_ACCESS_KEY>
+Secret key:        <S3_SECRET_KEY>
+Bucket:            <BUCKET_NAME>
+Force path style:  true     # required for Garage
 ```
 
-## Ports & what's exposed
+## Operations
 
-| Service          | Port | Exposure                    | Used by                         |
-|------------------|------|-----------------------------|---------------------------------|
-| `garage` S3      | 3900 | internal only               | your app (`http://garage:3900`) |
-| `garage` RPC     | 3901 | internal only               | cluster communication            |
-| `garage` Web     | 3902 | internal only               | static website hosting           |
-| `garage` Admin   | 3903 | internal only               | `garage-webui`                   |
-| `garage-webui`   | 3909 | **public** (behind login)   | you, from a browser              |
+- **Persistence:** lives in the `meta` / `data` volumes — back them up.
+- **Single node:** `replication_factor = 1` (one copy per object). Fine for a
+  standalone host; the underlying disk is your durability boundary.
+- **Metrics:** scrape `https://admin.../metrics` with
+  `Authorization: Bearer <GARAGE_METRICS_TOKEN>`.
+- **Self-bootstrap:** `server-init.sh` runs every boot and is idempotent.
+- **DB engine:** `lmdb` (Garage's recommended default).
+- **Versions:** Garage = vendored `garage/` source (v2.3.0); web UI = vendored
+  `garage-webui/` source.
 
-> Only `garage-webui` gets a public domain, and it requires a username/password
-> (`AUTH_USER_PASS`). The S3 API and admin API are never published to the internet.
+## Updating Garage
 
-## Notes & operations
+Re-vendor the source from your Garage checkout and bump `GIT_VERSION` in the
+`Dockerfile`. Keep `Cargo.toml`/`Cargo.lock` and the `fuzz/` member in sync so
+the `cargo build --locked` step stays reproducible:
 
-- **Persistence:** data lives in `garage_data` / `garage_meta` Docker volumes,
-  so it survives redeploys. Back these up.
-- **Single node = `replication_factor = 1`:** one copy of each object. Fine for a
-  standalone deploy; ensure the underlying disk is backed up.
-- **Self-bootstrapping:** `server-init.sh` runs on every container start. It's
-  idempotent — safe to redeploy without losing data.
-- **Pinned version:** `dxflrs/garage:v2.0.0`.
+```bash
+cp ../garage/Cargo.toml ../garage/Cargo.lock ./garage/
+rsync -a --exclude target ../garage/src/  ./garage/src/
+rsync -a --exclude target ../garage/fuzz/ ./garage/fuzz/
+```

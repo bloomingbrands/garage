@@ -1,40 +1,77 @@
-# ---- Stage 1: Garage v2.0.0 binary ----
-FROM dxflrs/garage:v2.0.0 AS garage-bin
+# =============================================================================
+# Garage (built from source, v2.3.0) + garage-webui, in one container.
+# Designed to deploy on Coolify as a single Application (Dockerfile build pack).
+#
+#   Stage 1  garage-build   compile the Garage binary from ./garage (Rust)
+#   Stage 2  webui-frontend build the React UI (pnpm)
+#   Stage 3  webui-backend  build the Go backend, embedding the UI
+#   Stage 4  runtime        Debian slim (glibc) running both via supervisord
+#
+# NOTE: the runtime base must be glibc-based (debian-slim), because the Garage
+# binary is compiled against glibc here. Copying it into Alpine (musl) would
+# produce a binary that cannot start.
+# =============================================================================
 
-# ---- Stage 2: garage-webui (Node frontend + Go backend) ----
-FROM node:20-slim AS webui-build
+# ---- Stage 1: build Garage from source --------------------------------------
+FROM rust:1-bookworm AS garage-build
+WORKDIR /src
+
+# Native toolchain for the bundled C deps (sqlite, lmdb, libsodium, zstd, ring).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential clang libclang-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stamp the reported version (otherwise it falls back to "unknown").
+ENV GIT_VERSION=v2.3.0
+
+COPY garage/ .
+
+# Build only the garage binary (default features: bundled-libs, metrics, lmdb,
+# sqlite, k2v). Cache mounts keep redeploys fast when BuildKit is enabled.
+RUN --mount=type=cache,id=garage-cargo-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=garage-cargo-target,target=/src/target \
+    cargo build --release --locked -p garage \
+    && cp target/release/garage /garage
+
+# ---- Stage 2: build the web UI frontend -------------------------------------
+FROM node:20-slim AS webui-frontend
 WORKDIR /app
-RUN npm install -g corepack@latest && corepack use pnpm@latest
+RUN npm install -g corepack@latest && corepack enable
 COPY garage-webui/package.json garage-webui/pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile || pnpm install
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    corepack pnpm install --frozen-lockfile
 COPY garage-webui/ .
-RUN pnpm run build
+RUN corepack pnpm run build
 
-FROM golang:1.23 AS webui-backend
+# ---- Stage 3: build the web UI backend (embeds the frontend) ----------------
+FROM golang:1.24-bookworm AS webui-backend
 WORKDIR /app
 COPY garage-webui/backend/go.mod garage-webui/backend/go.sum ./
 RUN go mod download
 COPY garage-webui/backend/ .
-COPY --from=webui-build /app/dist ./ui/dist
-RUN make
+COPY --from=webui-frontend /app/dist ./ui/dist
+RUN make   # CGO_ENABLED=0 -> static binary, runs on any base
 
-# ---- Stage 3: Final image — Garage + WebUI in one container ----
-FROM alpine:3.20
+# ---- Stage 4: runtime -------------------------------------------------------
+FROM debian:bookworm-slim AS runtime
 
-RUN apk add --no-cache python3 py3-pip ca-certificates curl && \
-    pip3 install --break-system-packages supervisor && \
-    rm -rf /var/cache/apk/* /root/.cache/pip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        supervisor ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY --from=garage-bin /garage /usr/local/bin/garage
-COPY --from=webui-backend /app/main /usr/local/bin/garage-webui
-COPY garage.toml /etc/garage.toml
-COPY server-init.sh /server-init.sh
-RUN chmod +x /server-init.sh
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --from=garage-build   /garage              /usr/local/bin/garage
+COPY --from=webui-backend  /app/main            /usr/local/bin/garage-webui
 
+COPY garage.toml        /etc/garage.toml
+COPY server-init.sh     /server-init.sh
+COPY webui-run.sh       /webui-run.sh
+COPY supervisord.conf   /etc/supervisor/conf.d/garage.conf
+RUN chmod +x /server-init.sh /webui-run.sh
+
+# S3 API | RPC | Web (static) | Admin API/metrics | Web UI
 EXPOSE 3900 3901 3902 3903 3909
 
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
-    CMD curl -f http://127.0.0.1:3909/ || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=60s \
+    CMD curl -fsS http://127.0.0.1:3909/ >/dev/null && garage status >/dev/null || exit 1
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/garage.conf"]

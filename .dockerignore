@@ -1,0 +1,16 @@
+# Keep the build context small and reproducible.
+**/.git
+**/.DS_Store
+.env
+.env.local
+
+# Rust build output — rebuilt inside the image
+garage/target/
+
+# Web UI deps/artifacts — reinstalled/rebuilt inside the image
+garage-webui/node_modules/
+garage-webui/dist/
+
+# Docs / screenshots not needed for the build
+garage-webui/misc/
+garage/doc/

@@ -1,3 +1,13 @@
 # Never commit real secrets
 .env
 .env.local
+
+# Rust build output (Garage source)
+garage/target/
+
+# Web UI build artifacts / deps
+garage-webui/node_modules/
+garage-webui/dist/
+
+# OS noise
+.DS_Store
