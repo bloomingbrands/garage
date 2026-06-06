@@ -6,7 +6,7 @@ set -u
 export CONFIG_PATH="${CONFIG_PATH:-/etc/garage.toml}"
 export API_BASE_URL="${API_BASE_URL:-http://127.0.0.1:3903}"
 export S3_ENDPOINT_URL="${S3_ENDPOINT_URL:-http://127.0.0.1:3900}"
-export S3_REGION="${S3_REGION:-garage}"
+export S3_REGION="${S3_REGION:-Germany-1}"
 export API_ADMIN_KEY="${GARAGE_ADMIN_TOKEN:-}"
 export AUTH_USER_PASS="${AUTH_USER_PASS:-}"
 export HOST="${HOST:-0.0.0.0}"

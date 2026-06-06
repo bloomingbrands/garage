@@ -1,0 +1,6 @@
+# pnpm 10+ reads the build-script allowlist here (no longer from package.json's
+# "pnpm" field). esbuild and @swc/core ship native binaries via a postinstall
+# build script, which pnpm blocks by default — explicitly allow them.
+allowBuilds:
+  '@swc/core': true
+  esbuild: true

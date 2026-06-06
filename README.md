@@ -75,7 +75,7 @@ then point your S3 client at the internal address:
 
 ```
 S3 Endpoint:       http://<garage-container>:3900   (internal) or https://s3.blooming-brands.com
-Region:            garage
+Region:            Germany-1
 Access key ID:     <S3_ACCESS_KEY>
 Secret key:        <S3_SECRET_KEY>
 Bucket:            <BUCKET_NAME>

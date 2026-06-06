@@ -37,7 +37,9 @@ RUN --mount=type=cache,id=garage-cargo-registry,target=/usr/local/cargo/registry
 FROM node:20-slim AS webui-frontend
 WORKDIR /app
 RUN npm install -g corepack@latest && corepack enable
-COPY garage-webui/package.json garage-webui/pnpm-lock.yaml ./
+# pnpm-workspace.yaml carries the build-script allowlist (allowBuilds) and must
+# be present at install time, or esbuild/@swc native binaries won't be built.
+COPY garage-webui/package.json garage-webui/pnpm-lock.yaml garage-webui/pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     corepack pnpm install --frozen-lockfile
 COPY garage-webui/ .
