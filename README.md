@@ -126,3 +126,19 @@ cp ../garage/Cargo.toml ../garage/Cargo.lock ./garage/
 rsync -a --exclude target ../garage/src/  ./garage/src/
 rsync -a --exclude target ../garage/fuzz/ ./garage/fuzz/
 ```
+
+## Backups (required at RF=1)
+
+With `replication_factor = 1` the meta/data volumes are the only copy of every
+object — including customer contracts stored by blooming-brands. Use
+`backup.sh` to take a consistent snapshot (it runs `garage meta snapshot` for
+LMDB consistency, then tars meta + data):
+
+```bash
+# on the docker host, e.g. daily at 03:17 UTC
+17 3 * * * CONTAINER=garage BACKUP_DIR=/var/backups/garage /opt/garage-deploy/backup.sh
+```
+
+Then ship `BACKUP_DIR` off the machine (restic/rclone/rsync to another host or
+S3 provider). A backup on the same disk is not a backup. Do a test restore
+(stop container → extract tarball over the volumes → start) at least once.
